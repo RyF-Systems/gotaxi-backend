@@ -1,0 +1,17 @@
+server:
+  address: 0.0.0.0
+  port: 8080
+spring:
+  application:
+    name: ryftaxi
+  web:
+    resources:
+      static-locations: classpath:/static/
+  webflux:
+    base-path: /
+  websocket:
+    allowed-origins: "*"
+
+logging:
+  level:
+    org.springframework.web: DEBUG

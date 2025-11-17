@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat WebSocket - Pruebas</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; }
+        .disconnected { background: #f8d7da; }
+        input, button { padding: 8px; margin: 5px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chat WebSocket</h1>
+        <div id="status" class="status disconnected">Desconectado</div>
+        
+        <div>
+            <input type="text" id="username" placeholder="Usuario" value="Usuario1">
+            <input type="text" id="roomId" placeholder="Sala" value="sala1">
+            <button onclick="connect()">Conectar</button>
+            <button onclick="disconnect()">Desconectar</button>
+        </div>
+        
+        <div id="messages"></div>
+        
+        <div>
+            <input type="text" id="messageInput" placeholder="Mensaje" disabled>
+            <button onclick="sendMessage()" disabled>Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const SERVER_URL = 'wss://x9jz7vr9-8080.use2.devtunnels.ms/ws/chat';
+        let ws = null;
+
+        function updateStatus(message, isConnected = false) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${isConnected ? 'connected' : 'disconnected'}`;
+        }
+
+        function connect() {
+            const username = document.getElementById('username').value || 'Usuario';
+            const roomId = document.getElementById('roomId').value || 'sala1';
+            
+            updateStatus('Conectando...', false);
+            
+            try {
+                ws = new WebSocket(SERVER_URL);
+                
+                ws.onopen = function() {
+                    updateStatus('Conectado!', true);
+                    document.getElementById('messageInput').disabled = false;
+                    document.querySelector('button[onclick="sendMessage()"]').disabled = false;
+                    
+                    // Unirse a la sala
+                    ws.send(JSON.stringify({
+                        type: 'JOIN',
+                        sender: username,
+                        roomId: roomId,
+                        content: ''
+                    }));
+                };
+                
+                ws.onmessage = function(event) {
+                    const message = JSON.parse(event.data);
+                    addMessage(message.sender, message.content);
+                };
+                
+                ws.onclose = function() {
+                    updateStatus('Desconectado', false);
+                    document.getElementById('messageInput').disabled = true;
+                    document.querySelector('button[onclick="sendMessage()"]').disabled = true;
+                };
+                
+                ws.onerror = function(error) {
+                    updateStatus('Error de conexión: ' + error, false);
+                };
+                
+            } catch (error) {
+                updateStatus('Error: ' + error.message, false);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            const username = document.getElementById('username').value;
+            const roomId = document.getElementById('roomId').value;
+            
+            if (message && ws) {
+                ws.send(JSON.stringify({
+                    type: 'CHAT',
+                    sender: username,
+                    roomId: roomId,
+                    content: message
+                }));
+                input.value = '';
+            }
+        }
+
+        function addMessage(sender, content) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.innerHTML = `<strong>${sender}:</strong> ${content}`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Enviar con Enter
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
