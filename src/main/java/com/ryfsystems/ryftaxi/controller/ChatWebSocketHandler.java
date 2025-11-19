@@ -7,6 +7,7 @@ import com.ryfsystems.ryftaxi.enums.MessageType;
 import com.ryfsystems.ryftaxi.model.ChatMessage;
 import com.ryfsystems.ryftaxi.model.User;
 import com.ryfsystems.ryftaxi.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class ChatWebSocketHandler extends TextWebSocketHandler{
 
     private final ObjectMapper objectMapper;
@@ -45,15 +47,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         this.objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         this.objectMapper.findAndRegisterModules();
         
-        System.out.println("✅ ObjectMapper configurado con JavaTimeModule");
-        System.out.println("📋 Módulos registrados: " + objectMapper.getRegisteredModuleIds());
+        log.debug("✅ ObjectMapper configurado con JavaTimeModule");
+        log.debug("📋 Módulos registrados: " + objectMapper.getRegisteredModuleIds());
     }
 
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.put(session.getId(), session);
-        System.out.println("🔗 Conexión establecida: " + session.getId());
+        log.debug("🔗 Conexión establecida: " + session.getId());
         
         // Suscribirse al flux de mensajes para este usuario con manejo de errores
         messageFlux
@@ -64,7 +66,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
                     System.err.println("❌ Error en flux para sesión " + session.getId() + ": " + error.getMessage());
                     cleanupClosedSession(session.getId());
                 },
-                () -> System.out.println("✅ Flux completado para sesión: " + session.getId())
+                () -> log.debug("✅ Flux completado para sesión: " + session.getId())
             );
     }
 
@@ -116,7 +118,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         userService.updateRoomAndSession(user.getId(), joinMessage.getRoomId(), user.getSessionId());
         
         messageSink.tryEmitNext(joinMessage);
-        System.out.println("👤 Usuario " + user.getUsername() + " se unió a la sala: " + message.getRoomId());
+        log.debug("👤 Usuario " + user.getUsername() + " se unió a la sala: " + message.getRoomId());
     }
 
     private void handleChat(WebSocketSession session, ChatMessage message) {
@@ -124,7 +126,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         if (user != null) {
             message.setSender(user.getUsername());
             messageSink.tryEmitNext(message);
-            System.out.println("Mensaje enviado: " + message);
+            log.debug("Mensaje enviado: " + message);
         }
     }
 
@@ -148,7 +150,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
             messageSink.tryEmitNext(leaveMessage);
             users.remove(session.getId());
             userService.updateRoomAndSession(user.getId(), null, null);
-            System.out.println("Usuario " + user.getUsername() + " dejó la sala");
+            log.debug("Usuario " + user.getUsername() + " dejó la sala");
         }
     }
 
@@ -162,7 +164,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        System.out.println("🔌 Conexión cerrada: " + session.getId() + " - Razón: " + status.getCode() + " - " + status.getReason());
+        log.debug("🔌 Conexión cerrada: " + session.getId() + " - Razón: " + status.getCode() + " - " + status.getReason());
         
         User user = users.get(session.getId());
         if (user != null) {
@@ -215,7 +217,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         }
         
         if (!closedSessions.isEmpty()) {
-            System.out.println("🧹 Limpiadas " + closedSessions.size() + " sesiones cerradas");
+            log.debug("🧹 Limpiadas " + closedSessions.size() + " sesiones cerradas");
         }
     }
 
@@ -234,14 +236,14 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         try {
             if (socketSession != null && socketSession.isOpen()) {
                 String jsonMessage = objectMapper.writeValueAsString(message);
-                System.out.println("📤 Enviando mensaje JSON a " + socketSession.getId() + ": " + jsonMessage);
+                log.debug("📤 Enviando mensaje JSON a " + socketSession.getId() + ": " + jsonMessage);
                 
                 synchronized (socketSession) {
                     socketSession.sendMessage(new TextMessage(jsonMessage));
                 }
-                System.out.println("✅ Mensaje enviado exitosamente a sesión: " + socketSession.getId());
+                log.debug("✅ Mensaje enviado exitosamente a sesión: " + socketSession.getId());
             } else {
-                System.out.println("⚠️ No se puede enviar mensaje - Sesión cerrada: " + 
+                log.debug("⚠️ No se puede enviar mensaje - Sesión cerrada: " + 
                                 (socketSession != null ? socketSession.getId() : "null"));
                 
                 // Limpiar sesión cerrada
@@ -261,24 +263,24 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
     }
 
     private void cleanupClosedSession(String sessionId) {
-    System.out.println("🧹 Limpiando sesión cerrada: " + sessionId);
+    log.debug("🧹 Limpiando sesión cerrada: " + sessionId);
     
     // Remover usuario si existe
     User user = users.remove(sessionId);
     if (user != null) {
-        System.out.println("👤 Usuario removido: " + user.getUsername());
+        log.debug("👤 Usuario removido: " + user.getUsername());
         
         // Remover de la sala
         if (user.getCurrentRoom() != null) {
             Map<String, User> room = roomUsers.get(user.getCurrentRoom());
             if (room != null) {
                 room.remove(sessionId);
-                System.out.println("🚪 Usuario removido de la sala: " + user.getCurrentRoom());
+                log.debug("🚪 Usuario removido de la sala: " + user.getCurrentRoom());
                 
                 // Si la sala queda vacía, limpiarla
                 if (room.isEmpty()) {
                     roomUsers.remove(user.getCurrentRoom());
-                    System.out.println("🗑️ Sala vacía removida: " + user.getCurrentRoom());
+                    log.debug("🗑️ Sala vacía removida: " + user.getCurrentRoom());
                 }
             }
         }
@@ -286,7 +288,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
     
     // Remover sesión
     sessions.remove(sessionId);
-    System.out.println("✅ Sesión limpiada: " + sessionId);
+    log.debug("✅ Sesión limpiada: " + sessionId);
 }
 
     private void sendError(WebSocketSession session, String error) {
@@ -300,7 +302,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
             String jsonError = objectMapper.writeValueAsString(errorMessage);
             session.sendMessage(new TextMessage(jsonError));
         } catch (IOException ex) {
-            System.err.println("Error enviando mensaje de error: " + ex.getMessage());
+            log.debug("Error enviando mensaje de error: " + ex.getMessage());
         }
     }
 
@@ -338,15 +340,13 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         stats.put("activeRooms", getActiveRoomsCount());
         stats.put("totalSessions", getTotalSessions());
         stats.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-        
-        // Detalles por sala
+
         Map<String, Integer> roomDetails = new HashMap<>();
         for (Map.Entry<String, Map<String, User>> entry : roomUsers.entrySet()) {
             roomDetails.put(entry.getKey(), entry.getValue().size());
         }
         stats.put("rooms", roomDetails);
-        
-        // Lista de usuarios conectados
+
         List<String> userList = users.values().stream()
                 .map(User::getUsername)
                 .collect(Collectors.toList());

@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public AuthResponse loginUser(LoginRequest request) {
         try {
-            User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> new Exception( "Usuario no encontrado"));
+            User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> new Exception("Usuario no encontrado"));
 
             if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
                 return new AuthResponse(false, "Usuario / Contraseña incorrecta");
@@ -85,16 +85,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public AuthResponse logoutUser(String username) {
-        Long response = userRepository.findByUsername(username)
+    public void logoutUser(String username) {
+        userRepository.findByUsername(username)
                 .map(user -> userRepository.updateUserOnlineStatus(user.getId(), false))
                 .orElseThrow(() -> new RuntimeException("Usuario No Encontrado"));
-
-        if (response > 0) {
-            return new AuthResponse(true, "Logout exitoso");
-        } else {
-            return new AuthResponse(false, "Error en logout");
-        }
     }
 
     @Override
@@ -110,8 +104,8 @@ public class UserServiceImpl implements UserService {
 
     public List<User> getOnlineUsers() {
         return userRepository.findOnlineUsers();
-    }  
-    
+    }
+
     public Optional<User> getUserByUsername(String username) {
         return userRepository.findByUsername(username);
     }

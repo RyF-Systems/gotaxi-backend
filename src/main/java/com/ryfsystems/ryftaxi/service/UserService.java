@@ -9,7 +9,7 @@ public interface UserService {
 
     AuthResponse registerUser(AuthRequest request);
     AuthResponse loginUser(LoginRequest request);
-    AuthResponse logoutUser(String username);
+    void logoutUser(String username);
 
     User findByUsername(String sender);
     void updateRoomAndSession(Long id, String roomId, String sessionId);
