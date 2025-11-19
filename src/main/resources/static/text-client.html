@@ -116,6 +116,10 @@
     </div>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const savedUsername = localStorage.getItem('chatUsername');
+        const defaultUsername = urlParams.get('username') || savedUsername || 'Usuario';
+        document.getElementById('username').value = defaultUsername;
         let ws = null;
         let typingTimer = null;
 

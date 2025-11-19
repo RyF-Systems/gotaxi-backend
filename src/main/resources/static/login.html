@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro y Login - Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 400px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tabs { display: flex; margin-bottom: 20px; }
+        .tab { flex: 1; padding: 10px; text-align: center; background: #e9ecef; border: none; cursor: pointer; }
+        .tab.active { background: #007bff; color: white; }
+        .form { display: none; }
+        .form.active { display: block; }
+        input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0056b3; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .guest-option { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 style="text-align: center;">💬 Chat WebSocket</h2>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('login')">Login</button>
+        <button class="tab" onclick="showTab('register')">Registro</button>
+    </div>
+
+    <!-- Formulario de Login -->
+    <div id="login-form" class="form active">
+        <h3>Iniciar Sesión</h3>
+        <input type="text" id="login-username" placeholder="Usuario" required>
+        <input type="password" id="login-password" placeholder="Contraseña" required>
+        <button onclick="login()">Entrar al Chat</button>
+
+        <div class="guest-option">
+            <p>¿Sin cuenta?</p>
+            <button onclick="enterAsGuest()" style="background: #28a745;" disabled>Entrar como Invitado</button>
+        </div>
+    </div>
+
+    <!-- Formulario de Registro -->
+    <div id="register-form" class="form">
+        <h3>Crear Cuenta</h3>
+        <input type="text" id="register-username" placeholder="Usuario" required>
+        <input type="email" id="register-email" placeholder="Email" required>
+        <input type="password" id="register-password" placeholder="Contraseña" required>
+        <button onclick="register()">Registrarse</button>
+    </div>
+
+    <div id="message"></div>
+</div>
+
+<script>
+    const API_BASE = window.location.origin + '/api/auth';
+
+    function showTab(tabName) {
+        // Ocultar todos los forms
+        document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+
+        // Mostrar el form seleccionado
+        document.getElementById(tabName + '-form').classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => messageDiv.innerHTML = '', 5000);
+    }
+
+    async function register() {
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+
+        if (!username || !email || !password) {
+            showMessage('Por favor completa todos los campos', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + '/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage('✅ ' + result.message, 'success');
+                // Auto-login después del registro
+                setTimeout(() => loginWithCredentials(username, password), 1000);
+            } else {
+                showMessage('❌ ' + result.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Error de conexión: ' + error.message, 'error');
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+
+        if (!username || !password) {
+            showMessage('Por favor completa todos los campos', 'error');
+            return;
+        }
+
+        await loginWithCredentials(username, password);
+    }
+
+    async function loginWithCredentials(username, password) {
+        try {
+            const response = await fetch(API_BASE + '/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage('✅ ' + result.message, 'success');
+                // Redirigir al chat
+                setTimeout(() => {
+                    localStorage.setItem('chatUsername', username);
+                    window.location.href = '/text-client.html?username=' + encodeURIComponent(username);
+                }, 1000);
+            } else {
+                showMessage('❌ ' + result.message, 'error');
+            }
+        } catch (error) {
+            showMessage('❌ Error de conexión: ' + error.message, 'error');
+        }
+    }
+
+    function enterAsGuest() {
+        const guestUsername = 'Invitado_' + Math.random().toString(36).substring(2, 8);
+        localStorage.setItem('chatUsername', guestUsername);
+        window.location.href = '/chat.html?username=' + encodeURIComponent(guestUsername);
+    }
+
+    // Verificar si ya hay un usuario en localStorage
+    window.addEventListener('load', function() {
+        const savedUsername = localStorage.getItem('chatUsername');
+        if (savedUsername && !savedUsername.startsWith('Invitado_')) {
+            document.getElementById('login-username').value = savedUsername;
+        }
+    });
+</script>
+</body>
+</html>

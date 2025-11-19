@@ -21,7 +21,7 @@
         
         <div>
             <input type="text" id="username" placeholder="Usuario" value="Usuario1">
-            <input type="text" id="roomId" placeholder="Sala" value="sala1">
+            <input type="text" id="roomId" placeholder="ID de Sala" disabled>
             <button onclick="connect()">Conectar</button>
             <button onclick="disconnect()">Desconectar</button>
         </div>
@@ -46,7 +46,7 @@
 
         function connect() {
             const username = document.getElementById('username').value || 'Usuario';
-            const roomId = document.getElementById('roomId').value || 'sala1';
+            const roomId = document.getElementById('roomId').value || 'sala-default';
             
             updateStatus('Conectando...', false);
             
@@ -93,6 +93,17 @@
                 ws = null;
             }
         }
+
+        function getDefaultRoomId() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0].replaceAll("-", ""); // YYYY-MM-DD
+            
+            return `${dateStr}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('roomId').value = getDefaultRoomId();
+        });
 
         function sendMessage() {
             const input = document.getElementById('messageInput');

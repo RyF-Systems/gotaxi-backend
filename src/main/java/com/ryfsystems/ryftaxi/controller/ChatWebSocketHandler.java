@@ -16,8 +16,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ryfsystems.ryftaxi.enums.MessageType;
 import com.ryfsystems.ryftaxi.model.ChatMessage;
+import com.ryfsystems.ryftaxi.enums.MessageType;
 import com.ryfsystems.ryftaxi.model.User;
 
 import reactor.core.publisher.Flux;
@@ -67,17 +67,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
             ChatMessage chatMessage = objectMapper.readValue(message.getPayload(), ChatMessage.class);
-            handleChatMessage(session, chatMessage);
+            User user = users.get(session.getId());
+            handleChatMessage(session, chatMessage, user);
         } catch (IOException e) {
             System.err.println("Error procesando mensaje: " + e.getMessage());
             sendError(session, "Error procesando mensaje");
         }
     }
 
-    private void handleChatMessage(WebSocketSession session, ChatMessage chatMessage) {
+    private void handleChatMessage(WebSocketSession session, ChatMessage chatMessage, User user) {
         switch (chatMessage.getType()) {
             case JOIN:
-                handleJoin(session, chatMessage);
+                handleJoin(session, chatMessage, user);
                 break;
             case CHAT:
                 handleChat(session, chatMessage);
@@ -91,8 +92,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         }
     }
 
-    private void handleJoin(WebSocketSession session, ChatMessage message) {
-        User user = new User(generateUserId(), message.getSender(), session.getId());
+    private void handleJoin(WebSocketSession session, ChatMessage message, User user) {
+        //User user = new User(generateUserId(), message.getSender(), session.getId());
+        user.setSessionId(session.getId());
         user.setCurrentRoom(message.getRoomId());
         users.put(session.getId(), user);
         
@@ -357,14 +359,25 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
         if (room == null) {
             return Map.of("error", "Sala no encontrada");
         }
+
+        List<Map<Object,Object>> usersInRoom = room.values()
+                .stream()
+                .map(user -> {
+                    Map<Object,Object> userInfo = new HashMap<>();
+                    userInfo.put("username", user.getUsername());
+                    userInfo.put("sessionId", user.getSessionId());
+                    userInfo.put("userId", user.getId());
+                    return userInfo;
+                })
+                .collect(Collectors.toList());
         
-        List<Map<String, String>> usersInRoom = room.values().stream()
+        /*List<Map<String,Object>> usersInRoom = room.values().stream()
                 .map(user -> Map.of(
                     "username", user.getUsername(),
                     "sessionId", user.getSessionId(),
                     "userId", user.getId()
                 ))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList());*/
                 
         return Map.of(
             "roomId", roomId,

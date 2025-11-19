@@ -1,27 +1,100 @@
 package com.ryfsystems.ryftaxi.model;
 
+import java.time.LocalDateTime;
+
+import jakarta.annotation.Nullable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
-import com.ryfsystems.ryftaxi.enums.UserType;
 
 @Data
+@Entity(name = "users")
 public class User {
-    private String id;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @NotBlank(message = "El username es obligatorio")
+    @Size(min = 3, max = 50, message = "El username debe tener entre 3 y 50 caracteres")
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
-    private String password;
+    
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "El formato del email no es válido")
+    @Column(unique = true, nullable = false, length = 100)
     private String email;
+    
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Column(nullable = false, length = 255)
+    private String password;
+    
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "gender")
+    private Gender gender;
+
+    @Column(name = "phone_number")
     private String phoneNumber;
+
+    @Column(name = "profile_picture_url")
+    @Nullable
     private String profilePictureUrl;
+    
+    @Nullable
     private String cedula;
+
+    @Column(name = "session_id")
+    @Nullable
     private String sessionId;
+
+    @Column(name = "current_room")
+    @Nullable
     private String currentRoom;
-    private UserType UserType;
+    
+    @Column(name = "created_at", updatable = false)
+    private String createdAt;
+
+    @Column(name = "updated_at")
+    private String updatedAt;
+
+    @Column(name = "last_login")
+    @Nullable
+    private String lastLogin;
+
+    @Column(name = "is_online")
+    private Boolean isOnline;
 
     public User() {
     }
 
-    public User(String id, String username, String sessionId) {
+    public User(Long id, String username, String sessionId) {
         this.id = id;
         this.username = username;
         this.sessionId = sessionId;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now().toString();
+        updatedAt = LocalDateTime.now().toString();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now().toString();
     }
 }

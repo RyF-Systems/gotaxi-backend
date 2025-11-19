@@ -4,6 +4,18 @@ server:
 spring:
   application:
     name: ryftaxi
+  datasource:
+    url: jdbc:mysql://localhost:3306/ryftaxi?useSSL=false&serverTimezone=UTC
+    username: root
+    password: Clave2025
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
   web:
     resources:
       static-locations: classpath:/static/

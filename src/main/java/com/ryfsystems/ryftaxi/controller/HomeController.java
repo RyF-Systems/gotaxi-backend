@@ -8,11 +8,11 @@ public class HomeController {
     
     @GetMapping("/")
     public String home() {
-        return "redirect:/index.html";
+        return "redirect:/login.html";
     }
     
     @GetMapping("/chat")
     public String chat() {
-        return "redirect:/index.html";
+        return "redirect:/login.html";
     }
 }
