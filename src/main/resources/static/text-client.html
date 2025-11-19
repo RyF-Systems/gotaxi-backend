@@ -75,248 +75,324 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+        /* Nuevos estilos para el botón de logout */
+        .logout-btn {
+            background-color: #dc3545;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
+<div class="header-controls">
     <h1>Chat WebSocket Test</h1>
-    
-    <div class="container">
-        <div class="connection-panel">
-            <h3>Conexión</h3>
-            <input type="text" id="username" placeholder="Tu nombre de usuario" value="Usuario1">
-            <input type="text" id="roomId" placeholder="ID de Sala" disabled>
-            <button onclick="connect()" id="connectBtn">Conectar</button>
-            <button onclick="disconnect()" id="disconnectBtn" disabled>Desconectar</button>
-        </div>
+    <button onclick="logout()" id="logoutBtn" class="logout-btn" style="display: none;">Cerrar Sesión</button>
+</div>
 
-        <div id="connectionStatus" class="status disconnected">
-            Desconectado
-        </div>
-
-        <div class="chat-panel">
-            <h3>Chat</h3>
-            <div id="messages"></div>
-            
-            <div>
-                <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." disabled>
-                <button onclick="sendMessage()" id="sendBtn" disabled>Enviar</button>
-                <button onclick="startTyping()" id="typingBtn" disabled>Escribiendo...</button>
-            </div>
-        </div>
+<div class="container">
+    <div class="connection-panel">
+        <h3>Conexión</h3>
+        <input type="text" id="username" placeholder="Tu nombre de usuario" value="Usuario1" disabled>
+        <input type="text" id="roomId" placeholder="ID de Sala" disabled>
+        <button onclick="connect()" id="connectBtn">Conectar</button>
+        <button onclick="disconnect()" id="disconnectBtn" disabled>Desconectar</button>
     </div>
 
-    <div class="container">
-        <h3>Instrucciones de Prueba</h3>
-        <ol>
-            <li>Llena tu nombre de usuario y sala</li>
-            <li>Haz clic en "Conectar"</li>
-            <li>Abre esta misma página en otra pestaña/navegador con un usuario diferente</li>
-            <li>Envía mensajes y observa cómo se sincronizan en tiempo real</li>
-        </ol>
+    <div id="connectionStatus" class="status disconnected">
+        Desconectado
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const savedUsername = localStorage.getItem('chatUsername');
-        const defaultUsername = urlParams.get('username') || savedUsername || 'Usuario';
-        document.getElementById('username').value = defaultUsername;
-        let ws = null;
-        let typingTimer = null;
+    <div class="chat-panel">
+        <h3>Chat</h3>
+        <div id="messages"></div>
 
-        function updateUI() {
-            const isConnected = ws !== null && ws.readyState === WebSocket.OPEN;
-            
-            document.getElementById('connectBtn').disabled = isConnected;
-            document.getElementById('disconnectBtn').disabled = !isConnected;
-            document.getElementById('sendBtn').disabled = !isConnected;
-            document.getElementById('typingBtn').disabled = !isConnected;
-            document.getElementById('messageInput').disabled = !isConnected;
-            
-            const statusDiv = document.getElementById('connectionStatus');
-            if (isConnected) {
-                statusDiv.textContent = 'Conectado';
-                statusDiv.className = 'status connected';
-            } else {
-                statusDiv.textContent = 'Desconectado';
-                statusDiv.className = 'status disconnected';
-            }
+        <div>
+            <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." disabled>
+            <button onclick="sendMessage()" id="sendBtn" disabled>Enviar</button>
+            <button onclick="startTyping()" id="typingBtn" disabled>Escribiendo...</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <h3>Instrucciones de Prueba</h3>
+    <ol>
+        <li>Llena tu nombre de usuario y sala</li>
+        <li>Haz clic en "Conectar"</li>
+        <li>Abre esta misma página en otra pestaña/navegador con un usuario diferente</li>
+        <li>Envía mensajes y observa cómo se sincronizan en tiempo real</li>
+        <li>Usa "Cerrar Sesión" para limpiar tu usuario y desconectarte completamente</li>
+    </ol>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const savedUsername = localStorage.getItem('chatUsername');
+    const defaultUsername = urlParams.get('username') || savedUsername || 'Usuario';
+    document.getElementById('username').value = defaultUsername;
+    let ws = null;
+    let typingTimer = null;
+    const API_BASE = window.location.origin + '/api/auth';
+    let authToken = localStorage.getItem('authToken');
+
+    function updateUI() {
+        const isConnected = ws !== null && ws.readyState === WebSocket.OPEN;
+        const hasUsername = document.getElementById('username').value.trim() !== '';
+
+        document.getElementById('connectBtn').disabled = isConnected || !hasUsername;
+        document.getElementById('disconnectBtn').disabled = !isConnected;
+        document.getElementById('sendBtn').disabled = !isConnected;
+        document.getElementById('typingBtn').disabled = !isConnected;
+        document.getElementById('messageInput').disabled = !isConnected;
+
+        // Mostrar/ocultar botón de logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (hasUsername) {
+            logoutBtn.style.display = 'block';
+        } else {
+            logoutBtn.style.display = 'none';
         }
 
-        function getDefaultRoomId() {
-            const now = new Date();
-            const dateStr = now.toISOString().split('T')[0].replaceAll("-", ""); // YYYY-MM-DD
-            
-            return `${dateStr}`;
+        const statusDiv = document.getElementById('connectionStatus');
+        if (isConnected) {
+            statusDiv.textContent = 'Conectado';
+            statusDiv.className = 'status connected';
+        } else {
+            statusDiv.textContent = 'Desconectado';
+            statusDiv.className = 'status disconnected';
+        }
+    }
+
+    function getDefaultRoomId() {
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0].replaceAll("-", ""); // YYYY-MM-DD
+        return `${dateStr}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('roomId').value = getDefaultRoomId();
+        updateUI();
+    });
+
+    function connect() {
+        const username = document.getElementById('username').value || 'UsuarioAnonimo';
+        const roomId = document.getElementById('roomId').value || 'sala-default';
+
+        if (!username.trim()) {
+            alert('Por favor ingresa un nombre de usuario');
+            return;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('roomId').value = getDefaultRoomId();
-        });
+        try {
+            ws = new WebSocket('ws://localhost:8080/ws/chat');
 
-        function connect() {
-            const username = document.getElementById('username').value || 'UsuarioAnonimo';
-            const roomId = document.getElementById('roomId').value || 'sala-default';
-            
-            if (!username.trim()) {
-                alert('Por favor ingresa un nombre de usuario');
-                return;
-            }
+            ws.onopen = function(event) {
+                addSystemMessage('Conexión establecida con el servidor');
+                updateUI();
 
-            try {
-                ws = new WebSocket('ws://localhost:8080/ws/chat');
-                
-                ws.onopen = function(event) {
-                    addSystemMessage('Conexión establecida con el servidor');
-                    updateUI();
-                    
-                    // Enviar mensaje de JOIN
-                    const joinMessage = {
-                        type: 'JOIN',
-                        sender: username,
-                        roomId: roomId,
-                        content: ''
-                    };
-                    ws.send(JSON.stringify(joinMessage));
-                };
-                
-                ws.onmessage = function(event) {
-                    const message = JSON.parse(event.data);
-                    displayMessage(message);
-                };
-                
-                ws.onclose = function(event) {
-                    addSystemMessage('Conexión cerrada');
-                    updateUI();
-                };
-                
-                ws.onerror = function(error) {
-                    addSystemMessage('Error de conexión: ' + error);
-                    console.error('WebSocket error:', error);
-                    updateUI();
-                };
+                // Guardar username en localStorage
+                localStorage.setItem('chatUsername', username);
 
-            } catch (error) {
-                addSystemMessage('Error al conectar: ' + error.message);
-                console.error('Connection error:', error);
-            }
-        }
-
-        function disconnect() {
-            if (ws) {
-                const username = document.getElementById('username').value;
-                const roomId = document.getElementById('roomId').value;
-                
-                // Enviar mensaje de LEAVE
-                const leaveMessage = {
-                    type: 'LEAVE',
+                // Enviar mensaje de JOIN
+                const joinMessage = {
+                    type: 'JOIN',
                     sender: username,
                     roomId: roomId,
                     content: ''
                 };
-                ws.send(JSON.stringify(leaveMessage));
-                
-                ws.close();
-                ws = null;
-            }
-            updateUI();
-        }
+                ws.send(JSON.stringify(joinMessage));
+            };
 
-        function sendMessage() {
-            const messageInput = document.getElementById('messageInput');
-            const content = messageInput.value.trim();
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                displayMessage(message);
+            };
+
+            ws.onclose = function() {
+                addSystemMessage('Conexión cerrada');
+                updateUI();
+            };
+
+            ws.onerror = function(error) {
+                addSystemMessage('Error de conexión: ' + error);
+                console.error('WebSocket error:', error);
+                updateUI();
+            };
+
+        } catch (error) {
+            addSystemMessage('Error al conectar: ' + error.message);
+            console.error('Connection error:', error);
+        }
+    }
+
+    function disconnect() {
+        if (ws) {
             const username = document.getElementById('username').value;
             const roomId = document.getElementById('roomId').value;
-            
-            if (!content) return;
-            
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const chatMessage = {
-                    type: 'CHAT',
-                    sender: username,
-                    roomId: roomId,
-                    content: content
-                };
-                ws.send(JSON.stringify(chatMessage));
-                messageInput.value = '';
-                
-                // Limpiar timer de typing
-                if (typingTimer) {
-                    clearTimeout(typingTimer);
-                    typingTimer = null;
-                }
-            }
+
+            // Enviar mensaje de LEAVE
+            const leaveMessage = {
+                type: 'LEAVE',
+                sender: username,
+                roomId: roomId,
+                content: ''
+            };
+            ws.send(JSON.stringify(leaveMessage));
+
+            ws.close();
+            ws = null;
         }
-
-        function startTyping() {
-            const username = document.getElementById('username').value;
-            const roomId = document.getElementById('roomId').value;
-            
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const typingMessage = {
-                    type: 'TYPING',
-                    sender: username,
-                    roomId: roomId,
-                    content: 'está escribiendo...'
-                };
-                ws.send(JSON.stringify(typingMessage));
-                
-                // Configurar timer para limpiar el estado de typing después de 3 segundos
-                if (typingTimer) {
-                    clearTimeout(typingTimer);
-                }
-                typingTimer = setTimeout(() => {
-                    // Podrías enviar un mensaje para limpiar el estado de typing
-                }, 3000);
-            }
-        }
-
-        function displayMessage(message) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            
-            const timestamp = new Date().toLocaleTimeString();
-            
-            switch(message.type) {
-                case 'CHAT':
-                    messageDiv.className += ' user-message';
-                    messageDiv.innerHTML = `<strong>${message.sender}</strong> (${timestamp}): ${message.content}`;
-                    break;
-                case 'JOIN':
-                case 'LEAVE':
-                    messageDiv.className += ' system-message';
-                    messageDiv.innerHTML = `⚡ ${message.content} (${timestamp})`;
-                    break;
-                case 'TYPING':
-                    messageDiv.className += ' typing-message';
-                    messageDiv.innerHTML = `✏️ ${message.sender} ${message.content}`;
-                    break;
-                default:
-                    messageDiv.innerHTML = `${message.sender}: ${message.content}`;
-            }
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function addSystemMessage(content) {
-            const messagesDiv = document.getElementById('messages');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message system-message';
-            messageDiv.textContent = `🔧 ${content}`;
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        // Permitir enviar mensaje con Enter
-        document.getElementById('messageInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        // Actualizar UI inicial
         updateUI();
-    </script>
+    }
+
+    // NUEVA FUNCIÓN: Logout completo
+    async function logout() {
+        const username = document.getElementById('username').value;
+
+        if (!username.trim()) {
+            return;
+        }
+
+        // 1. Desconectar del WebSocket si está conectado
+        if (ws) {
+            disconnect();
+        }
+
+        // 2. Llamar al endpoint de logout en el backend
+        try {
+            const response = await fetch(`${API_BASE}/logout/${encodeURIComponent(username)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                addSystemMessage('✅ ' + (result.message || 'Sesión cerrada correctamente'));
+            } else {
+                addSystemMessage('⚠️ No se pudo cerrar sesión en el servidor, pero se limpió localmente');
+            }
+        } catch (error) {
+            console.error('Error en logout:', error);
+            addSystemMessage('⚠️ Error de conexión al cerrar sesión, pero se limpió localmente');
+        }
+
+        // 3. Limpiar datos locales
+        localStorage.removeItem('chatUsername');
+        localStorage.removeItem('authToken');
+        document.getElementById('username').value = '';
+
+        // 4. Limpiar mensajes
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.innerHTML = '';
+
+        window.location.href = '/login.html';
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById('messageInput');
+        const content = messageInput.value.trim();
+        const username = document.getElementById('username').value;
+        const roomId = document.getElementById('roomId').value;
+
+        if (!content) return;
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const chatMessage = {
+                type: 'CHAT',
+                sender: username,
+                roomId: roomId,
+                content: content
+            };
+            ws.send(JSON.stringify(chatMessage));
+            messageInput.value = '';
+
+            // Limpiar timer de typing
+            if (typingTimer) {
+                clearTimeout(typingTimer);
+                typingTimer = null;
+            }
+        }
+    }
+
+    function startTyping() {
+        const username = document.getElementById('username').value;
+        const roomId = document.getElementById('roomId').value;
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const typingMessage = {
+                type: 'TYPING',
+                sender: username,
+                roomId: roomId,
+                content: 'está escribiendo...'
+            };
+            ws.send(JSON.stringify(typingMessage));
+
+            // Configurar timer para limpiar el estado de typing después de 3 segundos
+            if (typingTimer) {
+                clearTimeout(typingTimer);
+            }
+            typingTimer = setTimeout(() => {
+                // Podrías enviar un mensaje para limpiar el estado de typing
+            }, 3000);
+        }
+    }
+
+    function displayMessage(message) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+
+        const timestamp = new Date().toLocaleTimeString();
+
+        switch(message.type) {
+            case 'CHAT':
+                messageDiv.className += ' user-message';
+                messageDiv.innerHTML = `<strong>${message.sender}</strong> (${timestamp}): ${message.content}`;
+                break;
+            case 'JOIN':
+            case 'LEAVE':
+                messageDiv.className += ' system-message';
+                messageDiv.innerHTML = `⚡ ${message.content} (${timestamp})`;
+                break;
+            case 'TYPING':
+                messageDiv.className += ' typing-message';
+                messageDiv.innerHTML = `✏️ ${message.sender} ${message.content}`;
+                break;
+            default:
+                messageDiv.innerHTML = `${message.sender}: ${message.content}`;
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function addSystemMessage(content) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message system-message';
+        messageDiv.textContent = `🔧 ${content}`;
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Permitir enviar mensaje con Enter
+    document.getElementById('messageInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    // Actualizar UI cuando cambie el username
+    document.getElementById('username').addEventListener('input', updateUI);
+</script>
 </body>
 </html>

@@ -19,4 +19,7 @@ public class AuthRequest {
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
+
+    @NotBlank(message = "El tipo de Usuario es Obligatorio")
+    private Long userType;
 }

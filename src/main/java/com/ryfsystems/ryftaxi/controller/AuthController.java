@@ -2,10 +2,7 @@ package com.ryfsystems.ryftaxi.controller;
 
 import com.ryfsystems.ryftaxi.dto.LoginRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.ryfsystems.ryftaxi.dto.AuthRequest;
 import com.ryfsystems.ryftaxi.dto.AuthResponse;
@@ -33,9 +30,9 @@ public class AuthController {
         return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response); 
     }
 
-    @PostMapping("/logout")
-    public ResponseEntity<AuthResponse> logout(@RequestBody Long id) {
-       userService.logoutUser(id);
-       return ResponseEntity.ok(new AuthResponse(true, "Logout exitoso", null));
+    @PostMapping("/logout/{username}")
+    public ResponseEntity<AuthResponse> logout(@PathVariable String username) {
+       userService.logoutUser(username);
+       return ResponseEntity.ok(new AuthResponse(true, "Logout exitoso", null, null));
     }
 }

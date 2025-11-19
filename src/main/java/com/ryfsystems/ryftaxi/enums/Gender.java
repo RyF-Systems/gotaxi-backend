@@ -1,4 +1,4 @@
-package com.ryfsystems.ryftaxi.model;
+package com.ryfsystems.ryftaxi.enums;
 
 public enum Gender {
     MALE,

@@ -25,4 +25,13 @@ public class UserRole {
     @Size(min = 1, message = "Debe tener al menos 1 caracter")
     @Column(nullable = false, length = 255)
     private Long userTypeId;
+
+    public UserRole() {
+    }
+
+    public UserRole(Long userId, Long userTypeId) {
+        this.userId = userId;
+        this.userTypeId = userTypeId;
+    }
+
 }

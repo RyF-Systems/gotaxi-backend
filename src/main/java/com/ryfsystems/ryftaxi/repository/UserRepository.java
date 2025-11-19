@@ -30,4 +30,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE users u SET u.lastLogin = :timestamp WHERE u.id = :userId")
     void updateLastLogin(Long userId, String timestamp);
 
+    @Modifying
+    @Query("UPDATE users u SET u.currentRoom = :roomId, u.sessionId = :sessionId WHERE u.id = :id")
+    void updateUserRoomAnSession(Long id, String roomId, String sessionId);
+
 }

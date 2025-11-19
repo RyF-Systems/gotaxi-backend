@@ -1,8 +1,8 @@
 package com.ryfsystems.ryftaxi.dto;
 
-import java.time.LocalDateTime;
-
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class AuthResponse {
@@ -18,10 +18,11 @@ public class AuthResponse {
         this.timestamp = LocalDateTime.now().toString();
     }
 
-    public AuthResponse(boolean success, String message, String username) {
+    public AuthResponse(boolean success, String message, String username, String token) {
         this.success = success;
         this.message = message;
         this.username = username;
+        this.token = token;
         this.timestamp = LocalDateTime.now().toString();
     }
 }

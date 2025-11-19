@@ -1,3 +1,7 @@
+jwt:
+  expiration-ms: 86400000
+  issuer: ryftaxi-app
+  secret-key: mySuperSecretKeyForJWTGenerationInSpringBootApplication2025ThatShouldBeVeryLongAndSecure
 server:
   address: 0.0.0.0
   port: 8080

@@ -3,10 +3,14 @@ package com.ryfsystems.ryftaxi.service;
 import com.ryfsystems.ryftaxi.dto.AuthRequest;
 import com.ryfsystems.ryftaxi.dto.AuthResponse;
 import com.ryfsystems.ryftaxi.dto.LoginRequest;
+import com.ryfsystems.ryftaxi.model.User;
 
 public interface UserService {
 
     AuthResponse registerUser(AuthRequest request);
     AuthResponse loginUser(LoginRequest request);
-    AuthResponse logoutUser(Long id);
+    AuthResponse logoutUser(String username);
+
+    User findByUsername(String sender);
+    void updateRoomAndSession(Long id, String roomId, String sessionId);
 }
