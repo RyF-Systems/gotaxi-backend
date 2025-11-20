@@ -33,7 +33,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .toList();
 
         List<GrantedAuthority> authorities = userTypeNames.stream()
-                .map(typeName -> new SimpleGrantedAuthority(typeName.toUpperCase()))
+                .map(typeName -> new SimpleGrantedAuthority("ROLE_" + typeName.toUpperCase()))
                 .collect(Collectors.toList());
 
         return org.springframework.security.core.userdetails.User.builder()

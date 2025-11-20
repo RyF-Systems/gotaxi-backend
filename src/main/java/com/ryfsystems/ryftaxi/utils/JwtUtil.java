@@ -2,10 +2,12 @@ package com.ryfsystems.ryftaxi.utils;
 
 import com.ryfsystems.ryftaxi.config.JwtProperties;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtUtil {
 
     private final JwtProperties jwt;
@@ -88,6 +91,22 @@ public class JwtUtil {
             return new ArrayList<>();
         } catch (Exception e) {
             return new ArrayList<>();
+        }
+    }
+
+    public Boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            log.warn("❌ JWT token expirado: " + e.getMessage());
+            return false;
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("❌ JWT token inválido: " + e.getMessage());
+            return false;
         }
     }
 
