@@ -1,6 +1,9 @@
 package com.ryfsystems.ryftaxi.config;
 
 import com.ryfsystems.ryftaxi.utils.JwtUtil;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,13 +43,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String username = jwtUtil.extractUsername(jwt);
+        String username = null;
+
+        try {
+            // Intentar extraer el username PRIMERO para capturar excepciones temprano
+            username = jwtUtil.extractUsername(jwt);
+        } catch (ExpiredJwtException e) {
+            logger.warn("JWT token expirado para usuario: " + e.getClaims().getSubject());
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Token expirado. Por favor inicie sesión nuevamente.");
+            return;
+        } catch (Exception e) {
+            logger.warn("Error extrayendo username del token: " + e.getMessage());
+            sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                    "Token inválido");
+            return;
+        }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
-                List<GrantedAuthority> authorities = jwtUtil.extractAuthorities(jwt);
+                // Validar el token - esto puede lanzar ExpiredJwtException
+                if (jwtUtil.validateToken(jwt)) {
+                    List<GrantedAuthority> authorities = jwtUtil.extractAuthorities(jwt);
 
-                if (Boolean.TRUE.equals(jwtUtil.validateToken(jwt))) {
                     UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
                             .username(username)
                             .password("") // No necesitamos password para JWT
@@ -62,14 +81,71 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             " with authorities: " + authorities.stream()
                             .map(GrantedAuthority::getAuthority)
                             .toList());
+                } else {
+                    // Si validateToken devuelve false (pero no lanza excepción)
+                    sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                            "Token inválido");
+                    return;
                 }
+
+            } catch (ExpiredJwtException e) {
+                logger.warn("JWT token expirado para usuario: " + e.getClaims().getSubject());
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "Token expirado. Por favor inicie sesión nuevamente.");
+                return;
+
+            } catch (MalformedJwtException e) {
+                logger.warn("JWT token malformado: " + e.getMessage());
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "Token malformado");
+                return;
+
+            } catch (SignatureException e) {
+                logger.warn("JWT signature inválida: " + e.getMessage());
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "Firma del token inválida");
+                return;
+
+            } catch (IllegalArgumentException e) {
+                logger.warn("JWT claims vacío: " + e.getMessage());
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "Token claims vacío");
+                return;
+
             } catch (Exception e) {
-                logger.error("❌ JWT Authentication failed: " + e.getMessage());
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("Invalid JWT token");
+                logger.error("Error inesperado procesando JWT: " + e.getMessage());
+                sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Error interno del servidor");
                 return;
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, int status, String message)
+            throws IOException {
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String jsonResponse = String.format(
+                "{\"success\":false,\"message\":\"%s\",\"error\":\"%s\"}",
+                message,
+                getErrorType(status)
+        );
+        response.getWriter().write(jsonResponse);
+    }
+
+    private String getErrorType(int status) {
+        switch (status) {
+            case HttpServletResponse.SC_UNAUTHORIZED:
+                return "UNAUTHORIZED";
+            case HttpServletResponse.SC_FORBIDDEN:
+                return "FORBIDDEN";
+            case HttpServletResponse.SC_INTERNAL_SERVER_ERROR:
+                return "INTERNAL_SERVER_ERROR";
+            default:
+                return "UNKNOWN_ERROR";
+        }
     }
 }

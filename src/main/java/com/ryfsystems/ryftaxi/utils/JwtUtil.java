@@ -31,7 +31,14 @@ public class JwtUtil {
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (ExpiredJwtException e) {
+            // Propagar la excepción para que el filter la capture
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error extrayendo username del token", e);
+        }
     }
 
     public Date extractExpiration(String token) {
@@ -43,15 +50,27 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getPayload();
+        try {
+            return Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getPayload();
+        } catch (ExpiredJwtException e) {
+            // Propagar la excepción en lugar de capturarla
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Error extrayendo claims del token", e);
+        }
     }
 
     private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            return extractExpiration(token).before(new Date());
+        } catch (ExpiredJwtException e) {
+            // Propagar la excepción
+            throw e;
+        }
     }
 
     public String generateToken(UserDetails userDetails, User user) {
@@ -65,10 +84,10 @@ public class JwtUtil {
         claims.put("username", userDetails.getUsername());
         claims.put("id", user.getId());
         claims.put("firstName", user.getFirstName() != null ? user.getFirstName() : "");
-        claims.put("lastName", user.getLastName()  != null ? user.getLastName() : "");
-        claims.put("email", user.getEmail()  != null ? user.getEmail() : "");
+        claims.put("lastName", user.getLastName() != null ? user.getLastName() : "");
+        claims.put("email", user.getEmail() != null ? user.getEmail() : "");
         claims.put("phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
-        claims.put("profile_picture", user.getProfilePictureUrl()  != null ? user.getProfilePictureUrl() : "");
+        claims.put("profile_picture", user.getProfilePictureUrl() != null ? user.getProfilePictureUrl() : "");
         claims.put("cedula", user.getCedula() != null ? user.getCedula() : "");
 
         return createToken(claims, userDetails.getUsername());
@@ -97,11 +116,16 @@ public class JwtUtil {
                         .collect(Collectors.toList());
             }
             return new ArrayList<>();
+        } catch (ExpiredJwtException e) {
+            // Propagar la excepción
+            throw e;
         } catch (Exception e) {
+            log.warn("Error extrayendo autoridades del token: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
+    // ESTA ES LA FUNCIÓN CLAVE QUE DEBE PROPAGAR LA EXCEPCIÓN
     public Boolean validateToken(String token) {
         try {
             Jwts.parser()
@@ -110,8 +134,8 @@ public class JwtUtil {
                     .parseSignedClaims(token);
             return true;
         } catch (ExpiredJwtException e) {
-            log.warn("❌ JWT token expirado: " + e.getMessage());
-            return false;
+            // NO CAPTURAR LA EXCEPCIÓN AQUÍ - PROPAGARLA
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("❌ JWT token inválido: " + e.getMessage());
             return false;
@@ -131,6 +155,9 @@ public class JwtUtil {
 
             return (username != null && username.equals(userDetails.getUsername()) && !isTokenExpired(token) &&
                     new HashSet<>(tokenAuthorityStrings).containsAll(userAuthorityStrings));
+        } catch (ExpiredJwtException e) {
+            // Propagar la excepción
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }

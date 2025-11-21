@@ -5,104 +5,474 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat WebSocket Test</title>
     <style>
+        /* Estilos Base */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
         }
+
+        /* Contenedores */
         .container {
+            background: white;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .connection-panel, .chat-panel {
-            margin-bottom: 15px;
-        }
-        input, button {
-            padding: 8px 12px;
-            margin: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-        button:disabled {
-            background-color: #6c757d;
-            cursor: not-allowed;
-        }
-        #messages {
-            border: 1px solid #ccc;
-            height: 400px;
-            overflow-y: auto;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f8f9fa;
-        }
-        .message {
-            margin-bottom: 8px;
-            padding: 8px;
-            border-radius: 4px;
-        }
-        .system-message {
-            background-color: #e9ecef;
-            font-style: italic;
-            color: #6c757d;
-        }
-        .user-message {
-            background-color: #d1ecf1;
-            border-left: 3px solid #17a2b8;
-        }
-        .typing-message {
-            background-color: #fff3cd;
-            font-style: italic;
-            color: #856404;
-        }
-        .status {
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        .connected {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .disconnected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        /* Nuevos estilos para el botón de logout */
-        .logout-btn {
-            background-color: #dc3545;
-        }
-        .logout-btn:hover {
-            background-color: #c82333;
-        }
+
+        /* Header y Controles */
         .header-controls {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header-controls h1 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Paneles */
+        .connection-panel, .chat-panel {
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            color: #333;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        /* Formularios y Controles */
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+        input:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #545b62;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background-color: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+
+        /* Área de Mensajes */
+        #messages {
+            border: 1px solid #ccc;
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .message {
+            margin-bottom: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .system-message {
+            background-color: #e9ecef;
+            font-style: italic;
+            color: #6c757d;
+            border-left: 3px solid #6c757d;
+        }
+
+        .user-message {
+            background-color: #d1ecf1;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .typing-message {
+            background-color: #fff3cd;
+            font-style: italic;
+            color: #856404;
+            border-left: 3px solid #ffc107;
+        }
+
+        /* Estados de Conexión */
+        .status {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Instrucciones */
+        .instructions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        /* Modal de Perfil */
+        .profile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .profile-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 700px;
+            width: 95%;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: white;
+            padding: 0;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 1001;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .profile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .profile-header h2 {
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .profile-content {
+            padding: 25px;
+        }
+
+        .profile-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-field {
+            margin-bottom: 15px;
+        }
+
+        .profile-label {
+            font-weight: 600;
+            color: #555;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-value {
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #007bff;
+            min-height: 42px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .status-online {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-offline {
+            color: #6c757d;
+            font-weight: 600;
+        }
+
+        .status-active {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .profile-actions {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .profile-error {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 4px;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-controls {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .user-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .profile-info {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-container {
+                width: 98%;
+                max-height: 90vh;
+            }
+
+            .profile-actions {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            .profile-content {
+                padding: 15px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Utilidades */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+
+        .mb-15 {
+            margin-bottom: 15px;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+
+        .profile-value span {
+            margin: 0 8px;
+        }
+
+        .profile-value span:first-child {
+            margin-left: 0;
+        }
+
+        .profile-value span:last-child {
+            margin-right: 0;
         }
     </style>
 </head>
 <body>
+<!-- Header Principal -->
 <div class="header-controls">
-    <h1>Chat WebSocket Test</h1>
-    <button onclick="logout()" id="logoutBtn" class="logout-btn" style="display: none;">Cerrar Sesión</button>
+    <h1>💬 Chat WebSocket</h1>
+    <div class="user-info">
+        <span id="current-user">Usuario: <span id="username-display">-</span></span>
+        <button id="profile-btn" class="btn btn-primary">👤 Mi Perfil</button>
+        <button onclick="logout()" id="logoutBtn" class="btn btn-danger hidden">🚪 Salir</button>
+    </div>
 </div>
 
+<!-- Panel de Conexión -->
 <div class="container">
     <div class="connection-panel">
-        <h3>Conexión</h3>
-        <input type="text" id="username" placeholder="Tu nombre de usuario" value="Usuario1" disabled>
-        <input type="text" id="roomId" placeholder="ID de Sala" disabled>
-        <button onclick="connect()" id="connectBtn">Conectar</button>
-        <button onclick="disconnect()" id="disconnectBtn" disabled>Desconectar</button>
+        <h3 class="panel-title">Conexión</h3>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Tu nombre de usuario" value="Usuario1" disabled>
+            <input type="text" id="roomId" placeholder="ID de Sala" disabled>
+            <button onclick="connect()" id="connectBtn" class="btn btn-primary">Conectar</button>
+            <button onclick="disconnect()" id="disconnectBtn" class="btn btn-secondary" disabled>Desconectar</button>
+        </div>
     </div>
 
     <div id="connectionStatus" class="status disconnected">
@@ -110,141 +480,432 @@
     </div>
 
     <div class="chat-panel">
-        <h3>Chat</h3>
+        <h3 class="panel-title">Chat</h3>
         <div id="messages"></div>
 
-        <div>
+        <div class="input-group">
             <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." disabled>
-            <button onclick="sendMessage()" id="sendBtn" disabled>Enviar</button>
-            <button onclick="startTyping()" id="typingBtn" disabled>Escribiendo...</button>
+            <button onclick="sendMessage()" id="sendBtn" class="btn btn-primary" disabled>Enviar</button>
+            <button onclick="startTyping()" id="typingBtn" class="btn btn-secondary" disabled>✏️ Escribiendo...</button>
         </div>
     </div>
 </div>
 
+<!-- Panel de Instrucciones -->
 <div class="container">
-    <h3>Instrucciones de Prueba</h3>
-    <ol>
-        <li>Llena tu nombre de usuario y sala</li>
-        <li>Haz clic en "Conectar"</li>
-        <li>Abre esta misma página en otra pestaña/navegador con un usuario diferente</li>
-        <li>Envía mensajes y observa cómo se sincronizan en tiempo real</li>
-        <li>Usa "Cerrar Sesión" para limpiar tu usuario y desconectarte completamente</li>
-    </ol>
+    <h3 class="panel-title">Instrucciones de Uso</h3>
+    <div class="instructions">
+        <ol>
+            <li>Llena tu nombre de usuario y sala</li>
+            <li>Haz clic en "Conectar"</li>
+            <li>Abre esta misma página en otra pestaña/navegador con un usuario diferente</li>
+            <li>Envía mensajes y observa cómo se sincronizan en tiempo real</li>
+            <li>Usa "Cerrar Sesión" para limpiar tu usuario y desconectarte completamente</li>
+        </ol>
+    </div>
 </div>
 
+<!-- Modal de Perfil -->
+<div id="profile-modal" class="profile-container">
+    <div class="profile-header">
+        <h2>👤 Perfil de Usuario</h2>
+        <button id="close-profile" class="btn btn-secondary">✕ Cerrar</button>
+    </div>
+
+    <div class="profile-content">
+        <div id="profile-content">
+            <div class="profile-info">
+                <div class="profile-field">
+                    <span class="profile-label">Usuario:</span>
+                    <div class="profile-value" id="profile-username">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Email:</span>
+                    <div class="profile-value" id="profile-email">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Nombre:</span>
+                    <div class="profile-value" id="profile-name">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Apellido:</span>
+                    <div class="profile-value" id="profile-lastname">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Cédula:</span>
+                    <div class="profile-value" id="profile-cedula">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Teléfono:</span>
+                    <div class="profile-value" id="profile-phone">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Género:</span>
+                    <div class="profile-value" id="profile-gender">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Tipo de Usuario:</span>
+                    <div class="profile-value" id="profile-usertype">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Estado:</span>
+                    <div class="profile-value">
+                        <span id="profile-status" class="status-offline">-</span>  |
+                        <span id="profile-active" class="status-inactive">-</span>
+                    </div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Último Login:</span>
+                    <div class="profile-value" id="profile-lastlogin">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Fecha Registro:</span>
+                    <div class="profile-value" id="profile-created">-</div>
+                </div>
+
+                <div class="profile-field">
+                    <span class="profile-label">Sala Actual:</span>
+                    <div class="profile-value" id="profile-room">-</div>
+                </div>
+            </div>
+
+            <div class="profile-actions">
+                <button id="close-profile-bottom" class="btn btn-secondary">✕ Cerrar</button>
+            </div>
+        </div>
+
+        <div id="profile-error" class="profile-error"></div>
+    </div>
+</div>
+
+<!-- Overlay del Modal -->
+<div id="profile-overlay" class="profile-overlay"></div>
+
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const savedUsername = localStorage.getItem('chatUsername');
-    const defaultUsername = urlParams.get('username') || savedUsername || 'Usuario';
-    document.getElementById('username').value = defaultUsername;
+    // Constantes y Variables Globales
+    const API_BASE = window.location.origin + '/api';
+    const WS_URL = 'ws://localhost:8080/ws/chat';
+
     let ws = null;
     let typingTimer = null;
-    const API_BASE = window.location.origin + '/api/auth';
     let authToken = localStorage.getItem('authToken');
+
+    // Elementos DOM - CON VERIFICACIÓN DE EXISTENCIA
+    function getElements() {
+        return {
+            username: document.getElementById('username'),
+            roomId: document.getElementById('roomId'),
+            usernameDisplay: document.getElementById('username-display'),
+            messages: document.getElementById('messages'),
+            messageInput: document.getElementById('messageInput'),
+            connectionStatus: document.getElementById('connectionStatus'),
+            logoutBtn: document.getElementById('logoutBtn'),
+
+            // Botones - CON VERIFICACIÓN
+            connectBtn: document.getElementById('connectBtn'),
+            disconnectBtn: document.getElementById('disconnectBtn'),
+            sendBtn: document.getElementById('sendBtn'),
+            typingBtn: document.getElementById('typingBtn'),
+            profileBtn: document.getElementById('profile-btn'),
+            refreshProfile: document.getElementById('refresh-profile'),
+
+            // Modal
+            profileModal: document.getElementById('profile-modal'),
+            profileOverlay: document.getElementById('profile-overlay'),
+            closeProfileBtns: document.querySelectorAll('#close-profile, #close-profile-bottom'),
+            profileError: document.getElementById('profile-error')
+        };
+    }
+
+    let elements = {};
+
+    // Inicialización MEJORADA
+    function init() {
+        console.log('🔄 Inicializando aplicación...');
+
+        // Cargar elementos DOM
+        elements = getElements();
+
+        // Verificar que los elementos críticos existan
+        if (!elements.username || !elements.messages) {
+            console.error('❌ Elementos críticos del DOM no encontrados');
+            return;
+        }
+
+        loadUserData();
+        setupEventListeners();
+        updateUI();
+
+        // CONECTAR AUTOMÁTICAMENTE AL CARGAR LA PÁGINA
+        autoConnect();
+    }
+
+    // Nueva función para conexión automática
+    function autoConnect() {
+        const username = elements.username.value.trim();
+
+        if (username && username !== 'Usuario') {
+            console.log('🔄 Conectando automáticamente con usuario:', username);
+
+            // Pequeño delay para asegurar que todo esté cargado
+            setTimeout(() => {
+                connect();
+            }, 1000);
+        } else {
+            console.log('⏸️ No hay usuario válido para conexión automática');
+        }
+    }
+
+    function loadUserData() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const savedUsername = localStorage.getItem('chatUsername');
+        const defaultUsername = urlParams.get('username') || savedUsername || 'Usuario';
+
+        elements.username.value = defaultUsername;
+        if (elements.usernameDisplay) {
+            elements.usernameDisplay.textContent = defaultUsername;
+        }
+        if (elements.roomId) {
+            elements.roomId.value = getDefaultRoomId();
+        }
+    }
+
+    // SETUP EVENT LISTENERS MEJORADO - CON VERIFICACIÓN
+    function setupEventListeners() {
+        console.log('🔧 Configurando event listeners...');
+
+        // WebSocket y Chat - SOLO SI LOS ELEMENTOS EXISTEN
+        if (elements.connectBtn) {
+            elements.connectBtn.addEventListener('click', connect);
+        } else {
+            console.warn('⚠️ Botón conectar no encontrado');
+        }
+
+        if (elements.disconnectBtn) {
+            elements.disconnectBtn.addEventListener('click', disconnect);
+        }
+
+        if (elements.sendBtn) {
+            elements.sendBtn.addEventListener('click', sendMessage);
+        }
+
+        if (elements.typingBtn) {
+            elements.typingBtn.addEventListener('click', startTyping);
+        }
+
+        // Perfil - SOLO SI LOS ELEMENTOS EXISTEN
+        if (elements.profileBtn) {
+            elements.profileBtn.addEventListener('click', loadUserProfile);
+        }
+
+        if (elements.refreshProfile) {
+            elements.refreshProfile.addEventListener('click', loadUserProfile);
+        }
+
+        // Cerrar modal - SOLO SI LOS ELEMENTOS EXISTEN
+        if (elements.closeProfileBtns.length > 0) {
+            elements.closeProfileBtns.forEach(btn => {
+                btn.addEventListener('click', hideProfileModal);
+            });
+        }
+
+        if (elements.profileOverlay) {
+            elements.profileOverlay.addEventListener('click', hideProfileModal);
+        }
+
+        // Eventos de teclado - SOLO SI LOS ELEMENTOS EXISTEN
+        if (elements.messageInput) {
+            elements.messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+        }
+
+        if (elements.username) {
+            elements.username.addEventListener('input', updateUI);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') hideProfileModal();
+        });
+
+        console.log('✅ Event listeners configurados');
+    }
+
+    // Funciones de Utilidad
+    function getDefaultRoomId() {
+        const now = new Date();
+        return now.toISOString().split('T')[0].replaceAll("-", "");
+    }
 
     function updateUI() {
         const isConnected = ws !== null && ws.readyState === WebSocket.OPEN;
-        const hasUsername = document.getElementById('username').value.trim() !== '';
+        const hasUsername = elements.username && elements.username.value.trim() !== '';
 
-        document.getElementById('connectBtn').disabled = isConnected || !hasUsername;
-        document.getElementById('disconnectBtn').disabled = !isConnected;
-        document.getElementById('sendBtn').disabled = !isConnected;
-        document.getElementById('typingBtn').disabled = !isConnected;
-        document.getElementById('messageInput').disabled = !isConnected;
-
-        // Mostrar/ocultar botón de logout
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (hasUsername) {
-            logoutBtn.style.display = 'block';
-        } else {
-            logoutBtn.style.display = 'none';
+        // Botones de conexión - CON VERIFICACIÓN
+        if (elements.connectBtn) {
+            elements.connectBtn.disabled = isConnected || !hasUsername;
         }
 
-        const statusDiv = document.getElementById('connectionStatus');
-        if (isConnected) {
-            statusDiv.textContent = 'Conectado';
-            statusDiv.className = 'status connected';
-        } else {
-            statusDiv.textContent = 'Desconectado';
-            statusDiv.className = 'status disconnected';
+        if (elements.disconnectBtn) {
+            elements.disconnectBtn.disabled = !isConnected;
+        }
+
+        if (elements.sendBtn) {
+            elements.sendBtn.disabled = !isConnected;
+        }
+
+        if (elements.typingBtn) {
+            elements.typingBtn.disabled = !isConnected;
+        }
+
+        if (elements.messageInput) {
+            elements.messageInput.disabled = !isConnected;
+        }
+
+        // Botón de logout - CON VERIFICACIÓN
+        if (elements.logoutBtn) {
+            elements.logoutBtn.classList.toggle('hidden', !hasUsername);
+        }
+
+        // Estado de conexión - CON VERIFICACIÓN
+        if (elements.connectionStatus) {
+            if (isConnected) {
+                elements.connectionStatus.textContent = 'Conectado';
+                elements.connectionStatus.className = 'status connected';
+            } else {
+                elements.connectionStatus.textContent = 'Desconectado';
+                elements.connectionStatus.className = 'status disconnected';
+            }
         }
     }
 
-    function getDefaultRoomId() {
-        const now = new Date();
-        const dateStr = now.toISOString().split('T')[0].replaceAll("-", ""); // YYYY-MM-DD
-        return `${dateStr}`;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('roomId').value = getDefaultRoomId();
-        updateUI();
-    });
-
+    // FUNCIÓN CONNECT COMPLETAMENTE CORREGIDA
     function connect() {
-        const username = document.getElementById('username').value || 'UsuarioAnonimo';
-        const roomId = document.getElementById('roomId').value || 'sala-default';
+        const username = elements.username ? elements.username.value.trim() : 'UsuarioAnonimo';
+        const roomId = elements.roomId ? elements.roomId.value.trim() : 'sala-default';
 
-        if (!username.trim()) {
+        if (!username) {
             alert('Por favor ingresa un nombre de usuario');
             return;
         }
 
+        // Cerrar conexión existente si hay una
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+
         try {
-            ws = new WebSocket('ws://localhost:8080/ws/chat');
+            console.log('🔄 Iniciando conexión WebSocket a:', WS_URL);
+            ws = new WebSocket(WS_URL);
+
+            // Bandera para controlar el envío del mensaje JOIN
+            let joinMessageSent = false;
 
             ws.onopen = function(event) {
-                addSystemMessage('Conexión establecida con el servidor');
+                console.log('✅ WebSocket CONECTADO, estado:', ws.readyState);
+
+                if (elements.messages) {
+                    addSystemMessage('Conexión establecida con el servidor');
+                }
+
                 updateUI();
 
-                // Guardar username en localStorage
                 localStorage.setItem('chatUsername', username);
+                if (elements.usernameDisplay) {
+                    elements.usernameDisplay.textContent = username;
+                }
 
-                // Enviar mensaje de JOIN
-                const joinMessage = {
-                    type: 'JOIN',
-                    sender: username,
-                    roomId: roomId,
-                    content: ''
+                // ESPERAR A QUE EL WEBSOCKET ESTÉ REALMENTE LISTO
+                const waitForOpenConnection = (callback, maxAttempts = 10) => {
+                    let attempts = 0;
+                    const interval = setInterval(() => {
+                        if (ws.readyState === WebSocket.OPEN) {
+                            clearInterval(interval);
+                            callback();
+                        } else if (attempts >= maxAttempts) {
+                            clearInterval(interval);
+                            console.warn('❌ Timeout esperando por WebSocket OPEN');
+                        }
+                        attempts++;
+                    }, 50);
                 };
-                ws.send(JSON.stringify(joinMessage));
+
+                // Esperar a que el WebSocket esté completamente abierto
+                waitForOpenConnection(() => {
+                    if (!joinMessageSent && ws.readyState === WebSocket.OPEN) {
+                        const joinMessage = {
+                            type: 'JOIN',
+                            sender: username,
+                            roomId: roomId,
+                            content: `${username} se unió a la sala`
+                        };
+
+                        try {
+                            ws.send(JSON.stringify(joinMessage));
+                            joinMessageSent = true;
+                            console.log('✅ Mensaje JOIN enviado exitosamente');
+                        } catch (error) {
+                            console.error('❌ Error enviando JOIN:', error);
+                        }
+                    }
+                });
+
             };
 
             ws.onmessage = function(event) {
-                const message = JSON.parse(event.data);
-                displayMessage(message);
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('📨 Mensaje recibido:', message.type);
+                    displayMessage(message);
+                } catch (error) {
+                    console.error('❌ Error parsing message:', error, 'Data:', event.data);
+                }
             };
 
-            ws.onclose = function() {
+            ws.onclose = function(event) {
+                console.log('🔌 WebSocket cerrado - Código:', event.code, 'Razón:', event.reason);
                 addSystemMessage('Conexión cerrada');
                 updateUI();
             };
 
             ws.onerror = function(error) {
-                addSystemMessage('Error de conexión: ' + error);
-                console.error('WebSocket error:', error);
+                console.error('💥 WebSocket error:', error);
+                addSystemMessage('Error de conexión con el servidor');
                 updateUI();
             };
 
         } catch (error) {
+            console.error('❌ Error creando WebSocket:', error);
             addSystemMessage('Error al conectar: ' + error.message);
-            console.error('Connection error:', error);
         }
     }
 
     function disconnect() {
         if (ws) {
-            const username = document.getElementById('username').value;
-            const roomId = document.getElementById('roomId').value;
+            const username = elements.username ? elements.username.value : '';
+            const roomId = elements.roomId ? elements.roomId.value : '';
 
-            // Enviar mensaje de LEAVE
-            const leaveMessage = {
-                type: 'LEAVE',
-                sender: username,
-                roomId: roomId,
-                content: ''
-            };
-            ws.send(JSON.stringify(leaveMessage));
+            // Enviar mensaje de LEAVE si está conectado
+            if (ws.readyState === WebSocket.OPEN) {
+                const leaveMessage = {
+                    type: 'LEAVE',
+                    sender: username,
+                    roomId: roomId,
+                    content: ''
+                };
+                safeSend(leaveMessage);
+            }
 
             ws.close();
             ws = null;
@@ -252,108 +913,87 @@
         updateUI();
     }
 
-    // NUEVA FUNCIÓN: Logout completo
-    async function logout() {
-        const username = document.getElementById('username').value;
-
-        if (!username.trim()) {
-            return;
+    // Función segura para enviar mensajes - MEJORADA
+    function safeSend(message) {
+        if (!ws) {
+            console.warn('❌ WebSocket no inicializado');
+            return false;
         }
 
-        // 1. Desconectar del WebSocket si está conectado
-        if (ws) {
-            disconnect();
+        if (ws.readyState !== WebSocket.OPEN) {
+            console.warn('❌ WebSocket no está listo para enviar. Estado:', ws.readyState);
+            return false;
         }
 
-        // 2. Llamar al endpoint de logout en el backend
         try {
-            const response = await fetch(`${API_BASE}/logout/${encodeURIComponent(username)}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                addSystemMessage('✅ ' + (result.message || 'Sesión cerrada correctamente'));
-            } else {
-                addSystemMessage('⚠️ No se pudo cerrar sesión en el servidor, pero se limpió localmente');
+            if (typeof message === 'object') {
+                message = JSON.stringify(message);
             }
+            ws.send(message);
+            return true;
         } catch (error) {
-            console.error('Error en logout:', error);
-            addSystemMessage('⚠️ Error de conexión al cerrar sesión, pero se limpió localmente');
+            console.error('❌ Error enviando mensaje:', error);
+            return false;
         }
-
-        // 3. Limpiar datos locales
-        localStorage.removeItem('chatUsername');
-        localStorage.removeItem('authToken');
-        document.getElementById('username').value = '';
-
-        // 4. Limpiar mensajes
-        const messagesDiv = document.getElementById('messages');
-        messagesDiv.innerHTML = '';
-
-        window.location.href = '/login.html';
     }
 
     function sendMessage() {
-        const messageInput = document.getElementById('messageInput');
-        const content = messageInput.value.trim();
-        const username = document.getElementById('username').value;
-        const roomId = document.getElementById('roomId').value;
+        const content = elements.messageInput ? elements.messageInput.value.trim() : '';
+        const username = elements.username ? elements.username.value : '';
+        const roomId = elements.roomId ? elements.roomId.value : '';
 
         if (!content) return;
 
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            const chatMessage = {
-                type: 'CHAT',
-                sender: username,
-                roomId: roomId,
-                content: content
-            };
-            ws.send(JSON.stringify(chatMessage));
-            messageInput.value = '';
+        // Usar la función segura para enviar
+        const success = safeSend({
+            type: 'CHAT',
+            sender: username,
+            roomId: roomId,
+            content: content
+        });
+
+        if (success) {
+            if (elements.messageInput) {
+                elements.messageInput.value = '';
+            }
 
             // Limpiar timer de typing
             if (typingTimer) {
                 clearTimeout(typingTimer);
                 typingTimer = null;
             }
+        } else {
+            addSystemMessage('⚠️ No se pudo enviar el mensaje. Intenta reconectarte.');
         }
     }
 
     function startTyping() {
-        const username = document.getElementById('username').value;
-        const roomId = document.getElementById('roomId').value;
+        const username = elements.username ? elements.username.value : '';
+        const roomId = elements.roomId ? elements.roomId.value : '';
 
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            const typingMessage = {
-                type: 'TYPING',
-                sender: username,
-                roomId: roomId,
-                content: 'está escribiendo...'
-            };
-            ws.send(JSON.stringify(typingMessage));
+        safeSend({
+            type: 'TYPING',
+            sender: username,
+            roomId: roomId,
+            content: 'está escribiendo...'
+        });
 
-            // Configurar timer para limpiar el estado de typing después de 3 segundos
-            if (typingTimer) {
-                clearTimeout(typingTimer);
-            }
-            typingTimer = setTimeout(() => {
-                // Podrías enviar un mensaje para limpiar el estado de typing
-            }, 3000);
-        }
+        // Configurar timer para limpiar el estado de typing
+        if (typingTimer) clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            // Podría enviarse un mensaje para limpiar el estado
+        }, 3000);
     }
 
+    // Funciones de Mensajes - CON VERIFICACIÓN
     function displayMessage(message) {
-        const messagesDiv = document.getElementById('messages');
+        if (!elements.messages) return;
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message';
-
         const timestamp = new Date().toLocaleTimeString();
 
-        switch(message.type) {
+        switch (message.type) {
             case 'CHAT':
                 messageDiv.className += ' user-message';
                 messageDiv.innerHTML = `<strong>${message.sender}</strong> (${timestamp}): ${message.content}`;
@@ -371,28 +1011,324 @@
                 messageDiv.innerHTML = `${message.sender}: ${message.content}`;
         }
 
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        elements.messages.appendChild(messageDiv);
+        elements.messages.scrollTop = elements.messages.scrollHeight;
     }
 
     function addSystemMessage(content) {
-        const messagesDiv = document.getElementById('messages');
+        if (!elements.messages) return;
+
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message system-message';
         messageDiv.textContent = `🔧 ${content}`;
-        messagesDiv.appendChild(messageDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        elements.messages.appendChild(messageDiv);
+        elements.messages.scrollTop = elements.messages.scrollHeight;
     }
 
-    // Permitir enviar mensaje con Enter
-    document.getElementById('messageInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendMessage();
+    // Funciones de Perfil
+    function showProfileModal() {
+        if (elements.profileModal) {
+            elements.profileModal.style.display = 'block';
         }
-    });
+        if (elements.profileOverlay) {
+            elements.profileOverlay.style.display = 'block';
+        }
+        document.body.style.overflow = 'hidden';
+    }
 
-    // Actualizar UI cuando cambie el username
-    document.getElementById('username').addEventListener('input', updateUI);
+    function hideProfileModal() {
+        if (elements.profileModal) {
+            elements.profileModal.style.display = 'none';
+        }
+        if (elements.profileOverlay) {
+            elements.profileOverlay.style.display = 'none';
+        }
+        if (elements.profileError) {
+            elements.profileError.style.display = 'none';
+        }
+        document.body.style.overflow = '';
+    }
+
+    async function loadUserProfile() {
+        try {
+            // Resetear errores y mostrar loading
+            if (elements.profileError) {
+                elements.profileError.style.display = 'none';
+            }
+            showLoadingState();
+
+            if (!authToken) {
+                throw new Error('No hay token de autenticación. Por favor inicia sesión nuevamente.');
+            }
+
+            const response = await fetch(API_BASE + '/user/profile', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // Manejar diferentes estados de respuesta
+            if (response.status === 401) {
+                localStorage.removeItem('authToken');
+                throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+            }
+
+            if (response.status === 403) {
+                throw new Error('No tienes permisos para ver este perfil');
+            }
+
+            if (!response.ok) {
+                throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+
+            // Validar estructura de respuesta
+            if (!result || !result.body) {
+                throw new Error('Estructura de respuesta inválida');
+            }
+
+            const profileData = result.body;
+
+            // Validar datos mínimos del perfil
+            if (!profileData.username) {
+                throw new Error('Datos del perfil incompletos');
+            }
+
+            // Llenar el perfil
+            populateProfile(profileData);
+            showProfileModal();
+
+        } catch (error) {
+            console.error('Error cargando perfil:', error);
+            handleProfileError(error);
+        }
+    }
+
+    function showLoadingState() {
+        const loadingText = 'Cargando...';
+        const profileFields = [
+            'username', 'email', 'name', 'lastname', 'cedula',
+            'phone', 'gender', 'usertype', 'lastlogin', 'created', 'room'
+        ];
+
+        profileFields.forEach(field => {
+            const element = document.getElementById(`profile-${field}`);
+            if (element) {
+                element.textContent = loadingText;
+                element.style.color = '#6c757d';
+                element.style.fontStyle = 'italic';
+            }
+        });
+    }
+
+    function handleProfileError(error) {
+        let errorMessage = 'Error al cargar el perfil: ' + error.message;
+
+        // Mensajes específicos para diferentes errores
+        if (error.message.includes('Sesión expirada')) {
+            errorMessage = 'Tu sesión ha expirado. Serás redirigido al login...';
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 3000);
+        } else if (error.message.includes('permisos')) {
+            errorMessage = 'No tienes permisos para ver esta información';
+        } else if (error.message.includes('Estructura')) {
+            errorMessage = 'Error en el formato de los datos del servidor';
+        }
+
+        showProfileError(errorMessage);
+    }
+
+    function showProfileError(message) {
+        if (elements.profileError) {
+            elements.profileError.textContent = message;
+            elements.profileError.style.display = 'block';
+        }
+        showProfileModal(); // Mostrar modal incluso con error
+    }
+
+    function populateProfile(profile) {
+        // Datos básicos
+        setProfileField('username', profile.username);
+        setProfileField('email', profile.email);
+        setProfileField('name', profile.firstName);
+        setProfileField('lastname', profile.lastName);
+        setProfileField('cedula', profile.cedula);
+        setProfileField('phone', profile.phoneNumber);
+        setProfileField('gender', profile.gender);
+        setProfileField('usertype', profile.userTypeName);
+
+        // Estados
+        const statusElement = document.getElementById('profile-status');
+        const activeElement = document.getElementById('profile-active');
+
+        if (statusElement) {
+            if (profile.isOnline) {
+                statusElement.textContent = 'En línea';
+                statusElement.className = 'status-online';
+            } else {
+                statusElement.textContent = 'Desconectado';
+                statusElement.className = 'status-offline';
+            }
+        }
+
+        if (activeElement) {
+            if (profile.isActive) {
+                activeElement.textContent = 'Activo';
+                activeElement.className = 'status-active';
+            } else {
+                activeElement.textContent = 'Inactivo';
+                activeElement.className = 'status-inactive';
+            }
+        }
+
+        // Fechas
+        setProfileField('lastlogin', formatDate(profile.lastLogin));
+        setProfileField('created', formatDate(profile.createdAt));
+        setProfileField('room', profile.currentRoom);
+    }
+
+    function setProfileField(field, value) {
+        const element = document.getElementById(`profile-${field}`);
+        if (element) {
+            element.textContent = value || '-';
+            element.style.color = '';
+            element.style.fontStyle = '';
+        }
+    }
+
+    // Función de Logout
+    async function logout() {
+        const username = elements.username ? elements.username.value.trim() : '';
+
+        if (!username) return;
+
+        try {
+            // 1. Desconectar del WebSocket
+            if (ws) disconnect();
+
+            // 2. Preparar headers con autenticación
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            // Agregar token si existe
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            // 3. Llamar al endpoint de logout
+            const response = await fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                headers: headers
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                addSystemMessage('✅ ' + (result.message || 'Sesión cerrada correctamente'));
+            } else if (response.status === 403) {
+                // Si da 403, probablemente el token expiró, pero igual limpiamos
+                addSystemMessage('⚠️ Sesión expirada, limpiando datos locales');
+            } else {
+                addSystemMessage('⚠️ No se pudo cerrar sesión en el servidor');
+            }
+        } catch (error) {
+            console.error('Error en logout:', error);
+            addSystemMessage('⚠️ Error de conexión al cerrar sesión');
+        }
+
+        // 4. Limpiar datos locales SIEMPRE
+        localStorage.removeItem('chatUsername');
+        localStorage.removeItem('authToken');
+        if (elements.username) {
+            elements.username.value = '';
+        }
+        if (elements.usernameDisplay) {
+            elements.usernameDisplay.textContent = '-';
+        }
+        if (elements.messages) {
+            elements.messages.innerHTML = '';
+        }
+
+        updateUI();
+
+        // 5. Redirigir al login después de un breve delay
+        setTimeout(() => {
+            window.location.href = '/login.html';
+        }, 1000);
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return '-';
+
+        // Si ya es una fecha válida en formato ISO
+        if (dateString.includes('T') && !isNaN(new Date(dateString).getTime())) {
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Para el formato "Fri Nov 21 14:54:29 VET 2025"
+        if (dateString.includes('VET')) {
+            return formatVETDateCustom(dateString);
+        }
+
+        // Para cualquier otro formato, intentar con Date nativo
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Si nada funciona, devolver el string original
+        console.warn('No se pudo formatear la fecha:', dateString);
+        return dateString;
+    }
+
+    function formatVETDateCustom(dateString) {
+        try {
+            const parts = dateString.split(' ');
+            if (parts.length >= 6) {
+                const month = parts[1];  // Nov
+                const day = parts[2];    // 21
+                const time = parts[3];   // 14:54:29
+                const year = parts[5];   // 2025
+
+                const monthMap = {
+                    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                    'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                    'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                };
+
+                const monthNum = monthMap[month];
+                const [hours, minutes] = time.split(':');
+
+                if (monthNum) {
+                    // Formatear como: 21/11/2025 14:54
+                    return `${day.padStart(2, '0')}/${monthNum}/${year} ${hours}:${minutes}`;
+                }
+            }
+            return dateString;
+        } catch (error) {
+            return dateString;
+        }
+    }
+
+    // Inicializar la aplicación
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

@@ -25,4 +25,9 @@ public class UserTypeServiceImpl implements UserTypeService {
     public List<UserType> getAvailableUserTypes() {
         return repository.findAvailableUserTypes();
     }
+
+    @Override
+    public List<UserType> getByIdIn(List<Long> ids) {
+        return repository.findByIdIn(ids);
+    }
 }

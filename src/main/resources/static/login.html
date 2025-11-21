@@ -18,22 +18,19 @@
         .message { padding: 10px; margin: 10px 0; border-radius: 5px; }
         .success { background: #d4edda; color: #155724; }
         .error { background: #f8d7da; color: #721c24; }
-        .guest-option { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
+        .register-option { text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
         select {width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px;box-sizing: border-box;
             background-color: white;font-size: 14px;}
         select:required:invalid {color: #6c757d;}
         select option {color: #333;padding: 8px;}
         select option[value=""] {color: #6c757d;}
+        .btn-register { background: #28a745; }
+        .btn-register:hover { background: #218838; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2 style="text-align: center;">💬 Chat WebSocket</h2>
-
-    <div class="tabs">
-        <button class="tab active" onclick="showTab('login')">Login</button>
-        <button class="tab" onclick="showTab('register')">Registro</button>
-    </div>
 
     <!-- Formulario de Login -->
     <div id="login-form" class="form active">
@@ -42,9 +39,9 @@
         <input type="password" id="login-password" placeholder="Contraseña" required>
         <button onclick="login()">Entrar al Chat</button>
 
-        <div class="guest-option">
-            <p>¿Sin cuenta?</p>
-            <button onclick="enterAsGuest()" style="background: #28a745;" disabled>Entrar como Invitado</button>
+        <div class="register-option">
+            <p>¿No tienes cuenta?</p>
+            <button onclick="showTab('register')" class="btn-register">Crear Cuenta</button>
         </div>
     </div>
 
@@ -61,6 +58,11 @@
             Descripción del tipo de usuario seleccionado...
         </small>
         <button onclick="register()">Registrarse</button>
+
+        <div class="register-option">
+            <p>¿Ya tienes cuenta?</p>
+            <button onclick="showTab('login')">Iniciar Sesión</button>
+        </div>
     </div>
 
     <div id="message"></div>
@@ -68,6 +70,7 @@
 
 <script>
     const API_BASE = window.location.origin + '/api';
+    let authToken = null;
 
     async function loadUserTypes() {
         try {
@@ -112,7 +115,7 @@
 
         } catch (error) {
             console.error('❌ Error cargando tipos de usuario:', error);
-            //loadDefaultUserTypes();
+            showMessage('Error al cargar tipos de usuario', 'error');
         }
     }
 
@@ -123,7 +126,13 @@
 
         // Mostrar el form seleccionado
         document.getElementById(tabName + '-form').classList.add('active');
-        event.target.classList.add('active');
+
+        // Activar la pestaña correspondiente
+        document.querySelectorAll('.tab').forEach(tab => {
+            if (tab.textContent.toLowerCase().includes(tabName)) {
+                tab.classList.add('active');
+            }
+        });
 
         // Cargar tipos de usuario si es el formulario de registro
         if (tabName === 'register') {
@@ -135,26 +144,6 @@
         const messageDiv = document.getElementById('message');
         messageDiv.innerHTML = `<div class="message ${type}">${text}</div>`;
         setTimeout(() => messageDiv.innerHTML = '', 5000);
-    }
-
-    // Función para hacer requests autenticados
-    async function makeAuthenticatedRequest(url, options = {}) {
-        if (authToken) {
-            options.headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${authToken}`
-            };
-        }
-
-        const response = await fetch(url, options);
-
-        // Si el token expiró, hacer logout
-        if (response.status === 401) {
-            await logout();
-            throw new Error('Sesión expirada');
-        }
-
-        return response;
     }
 
     async function register() {
@@ -169,22 +158,46 @@
             return;
         }
 
-        const selectedOption = userTypeSelect.options[userTypeSelect.selectedIndex];
-        const userTypeName = selectedOption.textContent;
+        // Validación básica de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showMessage('Por favor ingresa un email válido', 'error');
+            return;
+        }
+
+        // Validación de contraseña (mínimo 6 caracteres)
+        if (password.length < 6) {
+            showMessage('La contraseña debe tener al menos 6 caracteres', 'error');
+            return;
+        }
 
         try {
             const response = await fetch(API_BASE + '/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password, userType: parseInt(userType)  })
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password,
+                    userType: parseInt(userType)
+                })
             });
 
             const result = await response.json();
 
             if (result.success) {
                 showMessage('✅ ' + result.message, 'success');
-                // Auto-login después del registro
+                // Limpiar formulario
+                document.getElementById('register-username').value = '';
+                document.getElementById('register-email').value = '';
+                document.getElementById('register-password').value = '';
+                document.getElementById('register-user-type').value = '';
 
+                // Auto-redirigir al login después de registro exitoso
+                setTimeout(() => {
+                    showTab('login');
+                    document.getElementById('login-username').value = username;
+                }, 2000);
             } else {
                 showMessage('❌ ' + result.message, 'error');
             }
@@ -232,19 +245,42 @@
         }
     }
 
-    function enterAsGuest() {
-        const guestUsername = 'Invitado_' + Math.random().toString(36).substring(2, 8);
-        localStorage.setItem('chatUsername', guestUsername);
-        window.location.href = '/chat.html?username=' + encodeURIComponent(guestUsername);
-    }
+    // Permitir login con Enter
+    document.getElementById('login-username').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+    document.getElementById('login-password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+    // Permitir registro con Enter
+    document.getElementById('register-password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            register();
+        }
+    });
 
     // Verificar si ya hay un usuario en localStorage
     window.addEventListener('load', function() {
         const savedUsername = localStorage.getItem('chatUsername');
-        loadUserTypes();
-        if (savedUsername && !savedUsername.startsWith('Invitado_')) {
-            document.getElementById('login-username').value = savedUsername;
+        const savedToken = localStorage.getItem('authToken');
+
+        if (savedToken) {
+            authToken = savedToken;
         }
+
+        if (savedUsername) {
+            document.getElementById('login-username').value = savedUsername;
+            document.getElementById('login-password').focus();
+        }
+
+        // Cargar tipos de usuario por si el usuario quiere registrarse
+        loadUserTypes();
     });
 </script>
 </body>

@@ -9,4 +9,5 @@ public interface UserTypeService {
     UserType findById(Long id);
 
     List<UserType> getAvailableUserTypes();
+    List<UserType> getByIdIn(List<Long> ids);
 }

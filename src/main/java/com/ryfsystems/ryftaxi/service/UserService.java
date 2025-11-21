@@ -4,6 +4,7 @@ import com.ryfsystems.ryftaxi.dto.AuthRequest;
 import com.ryfsystems.ryftaxi.dto.AuthResponse;
 import com.ryfsystems.ryftaxi.dto.LoginRequest;
 import com.ryfsystems.ryftaxi.model.User;
+import org.springframework.http.ResponseEntity;
 
 public interface UserService {
 
@@ -14,4 +15,6 @@ public interface UserService {
     User findByUsername(String sender);
     void updateRoomAndSession(Long id, String roomId, String sessionId);
     AuthResponse verifyEmail(String email, String verificationCode);
+
+    ResponseEntity<?> getUserProfile();
 }

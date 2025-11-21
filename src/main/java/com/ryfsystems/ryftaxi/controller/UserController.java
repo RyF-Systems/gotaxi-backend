@@ -1,6 +1,7 @@
 package com.ryfsystems.ryftaxi.controller;
 
 import com.ryfsystems.ryftaxi.model.UserType;
+import com.ryfsystems.ryftaxi.service.UserService;
 import com.ryfsystems.ryftaxi.service.UserTypeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.List;
 public class UserController {
 
     private final UserTypeService userTypeService;
+    private final UserService userService;
 
     @GetMapping("/register-types")
     public ResponseEntity<List<UserType>> getRegisterTypes() {
@@ -23,4 +25,8 @@ public class UserController {
         return ResponseEntity.ok(userTypes);
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<?> getUserProfile() {
+        return ResponseEntity.ok(userService.getUserProfile());
+    }
 }
