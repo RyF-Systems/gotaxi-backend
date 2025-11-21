@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Verifica tu cuenta - RyfTaxi</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; text-align: center; }
+        .content { background: #f9f9f9; padding: 20px; }
+        .code { font-size: 32px; font-weight: bold; text-align: center; letter-spacing: 5px; margin: 20px 0; color: #007bff; }
+        .button { display: inline-block; padding: 12px 24px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🔐 RyfTaxi</h1>
+        <h2>Verifica tu cuenta</h2>
+    </div>
+
+    <div class="content">
+        <p>Hola <strong th:text="${username}">Usuario</strong>,</p>
+
+        <p>Gracias por registrarte en RyfTaxi. Para activar tu cuenta, por favor utiliza el siguiente código de verificación:</p>
+
+        <div class="code" th:text="${verificationCode}">ABCDEF</div>
+
+        <p>Este código expirará en 30 minutos.</p>
+
+        <p style="text-align: center;">
+            <a th:href="${baseUrl} + '/api/auth/verify?code=' + ${verificationCode} + '&email=' + ${email}"
+               class="button">Verificar mi cuenta</a>
+        </p>
+
+        <p>Si no te registraste en RyfTaxi, por favor ignora este email.</p>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 RyfTaxi. Todos los derechos reservados.</p>
+        <p>Si necesitas ayuda, contáctanos: <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support@ryftaxi.com</a></p>
+    </div>
+</div>
+</body>
+</html>

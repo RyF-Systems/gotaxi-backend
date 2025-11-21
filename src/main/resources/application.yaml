@@ -1,3 +1,10 @@
+app:
+  email:
+    verification:
+      enabled: true
+      expiration-minutes: 30
+    sender: ryftaxi@gmail.com
+    base-url: http://localhost:8080
 jwt:
   expiration-ms: 86400000
   issuer: ryftaxi-app
@@ -20,6 +27,25 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ryftaxi@gmail.com
+    password: byhj frki gkcj wpli
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    servlet:
+      content-type: text/html
+    cache: false
   web:
     resources:
       static-locations: classpath:/static/

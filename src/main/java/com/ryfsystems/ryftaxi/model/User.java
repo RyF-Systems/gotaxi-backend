@@ -4,7 +4,6 @@ import com.ryfsystems.ryftaxi.enums.Gender;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -18,17 +17,14 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @NotBlank(message = "El username es obligatorio")
     @Size(min = 3, max = 50, message = "El username debe tener entre 3 y 50 caracteres")
     @Column(unique = true, nullable = false, length = 50)
     private String username;
     
-    @NotBlank(message = "El email es obligatorio")
     @Email(message = "El formato del email no es válido")
     @Column(unique = true, nullable = false, length = 100)
     private String email;
     
-    @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     @Column(nullable = false, length = 255)
     private String password;
@@ -72,6 +68,9 @@ public class User {
 
     @Column(name = "is_online")
     private Boolean isOnline;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
 
     public User() {
     }

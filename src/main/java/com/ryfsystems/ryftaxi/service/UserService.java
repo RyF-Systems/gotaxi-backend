@@ -13,4 +13,5 @@ public interface UserService {
 
     User findByUsername(String sender);
     void updateRoomAndSession(Long id, String roomId, String sessionId);
+    AuthResponse verifyEmail(String email, String verificationCode);
 }

@@ -12,12 +12,10 @@ public class UserType {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "El Nombre del Tipo es obligatorio")
     @Size(min = 3, max = 50, message = "El Nombre del Tipo debe tener entre 3 y 50 caracteres")
     @Column(unique = true, nullable = false, length = 50)
     private String typeName;
 
-    @NotBlank(message = "La Descripcion es obligatoria")
     @Size(min = 3, max = 50, message = "La Descripción debe tener entre 3 y 50 caracteres")
     @Column(unique = true, nullable = false, length = 50)
     private String description;

@@ -162,9 +162,9 @@
         const email = document.getElementById('register-email').value;
         const password = document.getElementById('register-password').value;
         const userTypeSelect = document.getElementById('register-user-type');
-        const userTypeId = userTypeSelect.value;
+        const userType = userTypeSelect.value;
 
-        if (!username || !email || !password || !userTypeId) {
+        if (!username || !email || !password || !userType) {
             showMessage('Por favor completa todos los campos', 'error');
             return;
         }
@@ -176,7 +176,7 @@
             const response = await fetch(API_BASE + '/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password, userTypeId: parseInt(userTypeId)  })
+                body: JSON.stringify({ username, email, password, userType: parseInt(userType)  })
             });
 
             const result = await response.json();
@@ -184,7 +184,7 @@
             if (result.success) {
                 showMessage('✅ ' + result.message, 'success');
                 // Auto-login después del registro
-                setTimeout(() => loginWithCredentials(username, password), 1000);
+
             } else {
                 showMessage('❌ ' + result.message, 'error');
             }

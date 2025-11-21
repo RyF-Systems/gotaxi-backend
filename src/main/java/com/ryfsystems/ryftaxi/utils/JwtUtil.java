@@ -1,6 +1,7 @@
 package com.ryfsystems.ryftaxi.utils;
 
 import com.ryfsystems.ryftaxi.config.JwtProperties;
+import com.ryfsystems.ryftaxi.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -53,7 +54,7 @@ public class JwtUtil {
         return extractExpiration(token).before(new Date());
     }
 
-    public String generateToken(UserDetails userDetails) {
+    public String generateToken(UserDetails userDetails, User user) {
         Map<String, Object> claims = new HashMap<>();
 
         List<String> authorities = userDetails.getAuthorities().stream()
@@ -62,6 +63,13 @@ public class JwtUtil {
 
         claims.put("authorities", authorities);
         claims.put("username", userDetails.getUsername());
+        claims.put("id", user.getId());
+        claims.put("firstName", user.getFirstName() != null ? user.getFirstName() : "");
+        claims.put("lastName", user.getLastName()  != null ? user.getLastName() : "");
+        claims.put("email", user.getEmail()  != null ? user.getEmail() : "");
+        claims.put("phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "");
+        claims.put("profile_picture", user.getProfilePictureUrl()  != null ? user.getProfilePictureUrl() : "");
+        claims.put("cedula", user.getCedula() != null ? user.getCedula() : "");
 
         return createToken(claims, userDetails.getUsername());
     }
