@@ -27,4 +27,16 @@ public class UserRoleServiceImpl implements UserRoleService {
     public List<UserRole> findByRoleId(Long roleId) {
         return userRoleRepository.findByUserTypeId(roleId);
     }
+
+    @Override
+    public UserRole findByUserIdAndRoleId(Long userId, Long roleId) {
+        return userRoleRepository.findByUserIdAndUserTypeId(userId, roleId).orElseThrow(
+                () -> new RuntimeException("Usuario no Encontrado")
+        );
+    }
+
+    @Override
+    public void save(UserRole userRole) {
+        userRoleRepository.save(userRole);
+    }
 }

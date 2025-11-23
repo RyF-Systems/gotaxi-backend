@@ -15,13 +15,15 @@ public class UserRole {
     private Long id;
     private Long userId;
     private Long userTypeId;
+    private Long userStateId;
 
     public UserRole() {
     }
 
-    public UserRole(Long userId, Long userTypeId) {
+    public UserRole(Long userId, Long userTypeId, Long userStateId) {
         this.userId = userId;
         this.userTypeId = userTypeId;
+        this.userStateId = userStateId;
     }
 
 }

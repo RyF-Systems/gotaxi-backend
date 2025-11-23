@@ -8,4 +8,6 @@ public interface UserRoleService {
 
     List<UserRole> findByUserId(Long userId);
     List<UserRole> findByRoleId(Long roleId);
+    UserRole findByUserIdAndRoleId(Long userId, Long roleId);
+    void save(UserRole userRole);
 }

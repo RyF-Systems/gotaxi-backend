@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Conductor Pendiente de Aprobación - RyfTaxi</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .driver-info {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+            color: #495057;
+        }
+        .info-value {
+            flex: 1;
+            color: #212529;
+        }
+        .documents h3 {
+            margin-top: 0;
+            color: #0056b3;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background 0.3s;
+            box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+            padding: 20px;
+        }
+        .urgency {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin: 15px 0;
+            color: #856404;
+            text-align: center;
+        }
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .pending {
+            background: #ffc107;
+            color: #212529;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚗 RyfTaxi - Panel Administrativo</h1>
+        <h2>Nuevo Conductor Pendiente de Aprobación</h2>
+    </div>
+
+    <div class="content">
+        <p>Hola <strong th:text="${adminName}">Administrador</strong>,</p>
+
+        <p>Se ha registrado un nuevo conductor en la plataforma que requiere tu revisión y aprobación.</p>
+
+        <div class="urgency">
+            ⏱️ <strong>Solicitud pendiente desde:</strong>
+            <span th:text="${requestDate}">Fecha de solicitud</span>
+        </div>
+
+        <div class="driver-info">
+            <h3 style="margin-top: 0;">📋 Información del Conductor</h3>
+
+            <div class="info-row">
+                <div class="info-label">Nombre completo:</div>
+                <div class="info-value" th:text="${driverFullName}">Nombre del conductor</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value" th:text="${driverEmail}">email@conductor.com</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Teléfono:</div>
+                <div class="info-value" th:text="${driverPhone}">+1234567890</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">ID/Tipo:</div>
+                <div class="info-value" th:text="${driverId}">ID del conductor</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Vehículo:</div>
+                <div class="info-value" th:text="${vehicleInfo}">Información del vehículo</div>
+            </div>
+
+            <div class="info-row">
+                <div class="info-label">Estado:</div>
+                <div class="info-value">
+                    <span th:text="${verificationStatus}">Pendiente</span>
+                    <span class="badge pending">PENDIENTE</span>
+                </div>
+            </div>
+        </div>
+
+        <p>Por favor, revisa la información y documentos del conductor para proceder con la aprobación o rechazo de la solicitud.</p>
+
+        <div class="button-container">
+            <a th:href="${baseUrl} + '/api/auth/approve?&email=' + ${email}" class="button">Aprobar Solicitud</a>
+        </div>
+
+        <p><strong>Nota:</strong> Esta solicitud será automáticamente rechazada si no se revisa en un plazo de 72 horas.</p>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2025 RyfTaxi. Todos los derechos reservados.</p>
+        <p>Este es un mensaje automático del sistema de administración de RyfTaxi.</p>
+    </div>
+</div>
+</body>
+</html>

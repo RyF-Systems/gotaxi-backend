@@ -486,7 +486,7 @@
         <div class="input-group">
             <input type="text" id="messageInput" placeholder="Escribe tu mensaje..." disabled>
             <button onclick="sendMessage()" id="sendBtn" class="btn btn-primary" disabled>Enviar</button>
-            <button onclick="startTyping()" id="typingBtn" class="btn btn-secondary" disabled>✏️ Escribiendo...</button>
+            <button id="typingBtn" class="btn btn-secondary" disabled>✏️ Escribiendo...</button>
         </div>
     </div>
 </div>
@@ -701,6 +701,18 @@
 
         if (elements.typingBtn) {
             elements.typingBtn.addEventListener('click', startTyping);
+        }
+
+        if (elements.messageInput) {
+            // Cuando el usuario empieza a escribir
+            elements.messageInput.addEventListener('input', handleTypingInput);
+
+            // Cuando el usuario presiona una tecla
+            elements.messageInput.addEventListener('keydown', handleTypingKeydown);
+
+            // Cuando el usuario enfoca/desenfoca el input
+            elements.messageInput.addEventListener('focus', handleInputFocus);
+            elements.messageInput.addEventListener('blur', handleInputBlur);
         }
 
         // Perfil - SOLO SI LOS ELEMENTOS EXISTEN
@@ -944,6 +956,8 @@
 
         if (!content) return;
 
+        stopTyping();
+
         // Usar la función segura para enviar
         const success = safeSend({
             type: 'CHAT',
@@ -967,7 +981,114 @@
         }
     }
 
+    let isCurrentlyTyping = false;
+    let typingDebounceTimer = null;
+
     function startTyping() {
+        if (isCurrentlyTyping) return;
+
+        isCurrentlyTyping = true;
+
+        const username = elements.username ? elements.username.value : '';
+        const roomId = elements.roomId ? elements.roomId.value : '';
+
+        console.log('✏️ Enviando typing indicator...');
+
+        safeSend({
+            type: 'TYPING',
+            sender: username,
+            roomId: roomId,
+            content: 'está escribiendo...',
+            timestamp: new Date().toISOString()
+        });
+
+        // Configurar timer para detener el typing después de 3 segundos de inactividad
+        if (typingTimer) clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+            stopTyping();
+        }, 3000);
+    }
+
+    // Función para detener el typing
+    function stopTyping() {
+        if (isCurrentlyTyping) {
+            isCurrentlyTyping = false;
+            if (typingTimer) {
+                clearTimeout(typingTimer);
+                typingTimer = null;
+            }
+            console.log('⏹️ Typing detenido');
+
+            // Opcional: enviar mensaje para limpiar el estado en otros clientes
+            const username = elements.username ? elements.username.value : '';
+            const roomId = elements.roomId ? elements.roomId.value : '';
+
+            safeSend({
+                type: 'STOP_TYPING',
+                sender: username,
+                roomId: roomId
+            });
+        }
+    }
+
+    // Función debounce para evitar enviar muchos eventos
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Versión debounced de startTyping para usar con el input
+    const debouncedStartTyping = debounce(startTyping, 500);
+
+    // Manejar input de typing
+    function handleTypingInput(event) {
+        const value = event.target.value.trim();
+
+        // Solo enviar typing si hay texto y estamos conectados
+        if (value.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
+            debouncedStartTyping();
+        } else if (value.length === 0) {
+            // Si se borró todo el texto, detener typing
+            stopTyping();
+        }
+    }
+
+    // Manejar keydown para casos especiales
+    function handleTypingKeydown(event) {
+        // Si presiona Enter, detener typing (porque va a enviar el mensaje)
+        if (event.key === 'Enter') {
+            stopTyping();
+        }
+        // Si presiona Escape, detener typing y limpiar input
+        else if (event.key === 'Escape') {
+            stopTyping();
+            if (elements.messageInput) {
+                elements.messageInput.value = '';
+            }
+        }
+    }
+
+    // Cuando el input recibe foco
+    function handleInputFocus() {
+        // Opcional: puedes iniciar typing automáticamente cuando el usuario hace clic en el input
+        console.log('🎯 Input enfocado');
+    }
+
+    // Cuando el input pierde foco
+    function handleInputBlur() {
+        // Detener typing cuando el usuario sale del input
+        stopTyping();
+        console.log('👋 Input perdió foco - typing detenido');
+    }
+
+    /*function startTyping() {
         const username = elements.username ? elements.username.value : '';
         const roomId = elements.roomId ? elements.roomId.value : '';
 
@@ -983,7 +1104,7 @@
         typingTimer = setTimeout(() => {
             // Podría enviarse un mensaje para limpiar el estado
         }, 3000);
-    }
+    }*/
 
     // Funciones de Mensajes - CON VERIFICACIÓN
     function displayMessage(message) {
@@ -1006,7 +1127,21 @@
             case 'TYPING':
                 messageDiv.className += ' typing-message';
                 messageDiv.innerHTML = `✏️ ${message.sender} ${message.content}`;
+                setTimeout(() => {
+                    if (messageDiv.parentElement) {
+                        messageDiv.remove();
+                    }
+                }, 3000);
                 break;
+            case 'STOP_TYPING':
+                // Buscar y eliminar el mensaje de typing de este usuario
+                const typingMessages = elements.messages.querySelectorAll('.typing-message');
+                typingMessages.forEach(typingMsg => {
+                    if (typingMsg.textContent.includes(message.sender)) {
+                        typingMsg.remove();
+                    }
+                });
+                return; // No mostrar un mensaje nuevo
             default:
                 messageDiv.innerHTML = `${message.sender}: ${message.content}`;
         }
@@ -1207,8 +1342,7 @@
         if (!username) return;
 
         try {
-            // 1. Desconectar del WebSocket
-            if (ws) disconnect();
+
 
             // 2. Preparar headers con autenticación
             const headers = {
@@ -1221,12 +1355,14 @@
             }
 
             // 3. Llamar al endpoint de logout
-            const response = await fetch(`${API_BASE}/auth/logout`, {
+            const response = await fetch(`${API_BASE}/auth/logout/${encodeURIComponent(username)}`, {
                 method: 'POST',
                 headers: headers
             });
 
             if (response.ok) {
+                // 1. Desconectar del WebSocket
+                if (ws) disconnect();
                 const result = await response.json();
                 addSystemMessage('✅ ' + (result.message || 'Sesión cerrada correctamente'));
             } else if (response.status === 403) {

@@ -69,8 +69,8 @@ public class User {
     @Column(name = "is_online")
     private Boolean isOnline;
 
-    @Column(name = "is_active")
-    private Boolean isActive;
+    @Column(name = "available")
+    private Boolean available;
 
     public User() {
     }

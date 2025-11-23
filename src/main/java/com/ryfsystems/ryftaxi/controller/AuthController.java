@@ -7,7 +7,6 @@ import com.ryfsystems.ryftaxi.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -31,11 +30,11 @@ public class AuthController {
         return ResponseEntity.status(response.isSuccess() ? 200 : 400).body(response); 
     }
 
-    @PreAuthorize("hasAnyAuthority()")
+    //@PreAuthorize("hasAnyAuthority()")
     @PostMapping("/logout/{username}")
     public ResponseEntity<AuthResponse> logout(@PathVariable String username) {
        userService.logoutUser(username);
-       return ResponseEntity.ok(new AuthResponse(true, "Logout exitoso", null, null));
+       return ResponseEntity.ok(new AuthResponse(true, "Logout exitoso"));
     }
 
     @PostMapping("/verify")
@@ -55,6 +54,18 @@ public class AuthController {
             return ResponseEntity.ok("<h1>✅ Email verificado exitosamente</h1>" +
                     "<p>Ya puedes iniciar sesión en la aplicación.</p>" +
                     "<a href='/login.html'>Ir al login</a>");
+        } else {
+            return ResponseEntity.badRequest().body("<h1>❌ Error verificando email</h1>" +
+                    "<p>" + response.getMessage() + "</p>");
+        }
+    }
+
+    @GetMapping("/approve")
+    public ResponseEntity<String> approveEmailGet(@RequestParam String email) {
+        AuthResponse response = userService.approveDriver(email);
+
+        if (response.isSuccess()) {
+            return ResponseEntity.ok("<h1>✅ Driver Aprobado exitosamente</h1>");
         } else {
             return ResponseEntity.badRequest().body("<h1>❌ Error verificando email</h1>" +
                     "<p>" + response.getMessage() + "</p>");

@@ -4,5 +4,6 @@ public enum MessageType {
     CHAT, 
     JOIN, 
     LEAVE, 
-    TYPING
+    TYPING,
+    STOP_TYPING
 }

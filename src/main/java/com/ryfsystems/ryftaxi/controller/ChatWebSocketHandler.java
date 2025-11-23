@@ -95,6 +95,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler{
             case TYPING:
                 handleTyping(session, chatMessage);
                 break;
+            case STOP_TYPING:
+                handleStopTyping(session, chatMessage);
+        }
+    }
+
+    private void handleStopTyping(WebSocketSession session, ChatMessage chatMessage) {
+        User user = users.get(session.getId());
+        if (user != null) {
+            chatMessage.setSender(user.getUsername());
+            messageSink.tryEmitNext(chatMessage);
         }
     }
 

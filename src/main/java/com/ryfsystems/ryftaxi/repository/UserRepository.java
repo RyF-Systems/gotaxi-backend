@@ -1,15 +1,13 @@
 package com.ryfsystems.ryftaxi.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.ryfsystems.ryftaxi.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import com.ryfsystems.ryftaxi.dto.AuthResponse;
-import com.ryfsystems.ryftaxi.model.User;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -27,6 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Long updateUserOnlineStatus(Long userId, boolean isOnline);
 
     @Modifying
+    @Query("UPDATE users u SET u.available = :isAvailable WHERE u.id = :userId")
+    Long updateUserAvailability(Long userId, boolean isAvailable);
+
+    @Modifying
     @Query("UPDATE users u SET u.lastLogin = :timestamp WHERE u.id = :userId")
     void updateLastLogin(Long userId, String timestamp);
 
@@ -34,4 +36,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("UPDATE users u SET u.currentRoom = :roomId, u.sessionId = :sessionId WHERE u.id = :id")
     void updateUserRoomAnSession(Long id, String roomId, String sessionId);
 
+    @Query("Select u from users u join user_roles ur on u.id = ur.userId where ur.userTypeId = 2 ORDER BY u.id ASC LIMIT 1")
+    User findFirstAdmin();
 }

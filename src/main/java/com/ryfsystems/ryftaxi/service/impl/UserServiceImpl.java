@@ -8,7 +8,6 @@ import com.ryfsystems.ryftaxi.model.User;
 import com.ryfsystems.ryftaxi.model.UserRole;
 import com.ryfsystems.ryftaxi.model.UserType;
 import com.ryfsystems.ryftaxi.repository.UserRepository;
-import com.ryfsystems.ryftaxi.repository.UserRoleRepository;
 import com.ryfsystems.ryftaxi.service.*;
 import com.ryfsystems.ryftaxi.utils.JwtUtil;
 import jakarta.transaction.Transactional;
@@ -33,7 +32,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserTypeService userTypeService;
     private final UserRoleService userRoleService;
-    private final UserRoleRepository userRoleRepository;
     private final CustomUserDetailsService userDetailsService;
     private final EmailVerificationService emailVerificationService;
     private final JwtUtil jwtUtil;
@@ -53,10 +51,21 @@ public class UserServiceImpl implements UserService {
                 return new AuthResponse(false, "Tipo de usuario no válido");
             }
             User saved = saveNewUser(request);
-            registerRole(saved.getId(), request.getUserType());
-            emailVerificationService.sendVerificationEmail(saved);
-            return new AuthResponse(true, "Usuario registrado exitosamente, por favor revisa tu e-mail",
-                    saved.getUsername(), null);
+            if (request.getUserType() == 3) {
+                registerRole(saved.getId(), request.getUserType(), 1L);
+                User admin = this.findFirstAdmin();
+                emailVerificationService.sendApprovalEmail(saved, admin, request);
+                return new AuthResponse(true, "Usuario registrado exitosamente en espera de aprobación",
+                        saved.getUsername(), null, null);
+            } else if (request.getUserType() == 4) {
+                registerRole(saved.getId(), request.getUserType(), 3L);
+                emailVerificationService.sendVerificationEmail(saved);
+                return new AuthResponse(true, "Usuario registrado exitosamente, por favor revisa tu e-mail",
+                        saved.getUsername(), null, null);
+            } else {
+                return new AuthResponse(true, "Usuario registrado exitosamente",
+                        saved.getUsername(), null, null);
+            }
         } catch (Exception e) {
             return new AuthResponse(false, "Error al registrar el usuario: " + e.getMessage());
         }
@@ -67,36 +76,42 @@ public class UserServiceImpl implements UserService {
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-        newUser.setIsActive(false);
         newUser.setIsOnline(false);
         return userRepository.save(newUser);
     }
 
-    private void registerRole(Long userId, Long userType) {
-        UserRole userRole = new UserRole(userId, userType);
-        userRoleRepository.save(userRole);
+    private void registerRole(Long userId, Long userType, Long userStateId) {
+        UserRole userRole = new UserRole(userId, userType, userStateId);
+        userRoleService.save(userRole);
     }
 
     @Override
     public AuthResponse loginUser(LoginRequest request) {
         try {
-            User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> new Exception("Usuario no encontrado"));
-
-            if (userOpt.getIsActive()) {
-                if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
-                    return new AuthResponse(false, "Usuario / Contraseña incorrecta");
-                }
-
+            User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(
+                    () -> new Exception("Usuario no encontrado"));
+            Long userState = userRoleService.findByUserIdAndRoleId(userOpt.getId(), request.getRoleId()).getUserStateId();
+            if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
+                return new AuthResponse(false, "Usuario / Contraseña incorrecta");
+            }
+            if (userState == 2 || userState == 1) {
                 userOpt.setIsOnline(true);
+                userOpt.setAvailable(true);
                 userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
-
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
-
                 String token = jwtUtil.generateToken(userDetails, userOpt);
-
-                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), token);
-            } else {
+                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), userState, token);
+            } else if (userState == 3) {
                 return new AuthResponse(false, "Usuario no Está Activado");
+            } else if (userState == 4) {
+                return new AuthResponse(false, "Usuario Baneado");
+            } else {
+                userOpt.setIsOnline(true);
+                userOpt.setAvailable(true);
+                userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
+                String token = jwtUtil.generateToken(userDetails, userOpt);
+                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), userState, token);
             }
         } catch (Exception e) {
             return new AuthResponse(false, "Error en login: " + e.getMessage());
@@ -105,9 +120,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void logoutUser(String username) {
-        userRepository.findByUsername(username)
-                .map(user -> userRepository.updateUserOnlineStatus(user.getId(), false))
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario No Encontrado"));
+
+        userRepository.updateUserOnlineStatus(user.getId(), false);
+        userRepository.updateUserAvailability(user.getId(), false);
     }
 
     @Override
@@ -129,14 +146,10 @@ public class UserServiceImpl implements UserService {
                 Optional<User> userOpt = userRepository.findByEmail(email);
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
-                    user.setIsActive(true);
+                    UserRole userRole = userRoleService.findByUserIdAndRoleId(user.getId(), 4L);
+                    userRole.setUserStateId(2L);
                     userRepository.save(user);
-
-                    // Generar token JWT
-                    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-                    String token = jwtUtil.generateToken(userDetails, user);
-
-                    return new AuthResponse(true, "Email verificado exitosamente", user.getUsername(), token);
+                    return new AuthResponse(true, "Email verificado exitosamente");
                 }
             }
             return new AuthResponse(false, "Código de verificación inválido o expirado");
@@ -150,7 +163,7 @@ public class UserServiceImpl implements UserService {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
-            User user =  userRepository.findByUsername(username).orElseThrow(
+            User user = userRepository.findByUsername(username).orElseThrow(
                     () -> new RuntimeException("Usuario no encontrado"));
 
             List<Long> userRoles = userRoleService.findByUserId(user.getId())
@@ -158,28 +171,52 @@ public class UserServiceImpl implements UserService {
             List<String> userTypes = userTypeService.getByIdIn(userRoles)
                     .stream().map(UserType::getTypeName).toList();
 
-            UserProfileResponse profile = new UserProfileResponse();
-            profile.setId(user.getId());
-            profile.setUsername(user.getUsername());
-            profile.setEmail(user.getEmail());
-            profile.setFirstName(user.getFirstName());
-            profile.setLastName(user.getLastName());
-            profile.setCedula(user.getCedula());
-            profile.setPhoneNumber(user.getPhoneNumber());
-            profile.setGender(user.getGender());
-            profile.setIsActive(user.getIsActive());
-            profile.setIsOnline(user.getIsOnline());
-            profile.setLastLogin(user.getLastLogin());
-            profile.setCreatedAt(user.getCreatedAt());
-            profile.setUpdatedAt(user.getUpdatedAt());
-            profile.setProfilePictureUrl(user.getProfilePictureUrl());
-            profile.setCurrentRoom(user.getCurrentRoom());
-            profile.setSessionId(user.getSessionId());
-            profile.setUserRoles(userTypes);
+            UserProfileResponse profile = getUserProfileResponse(user, userTypes);
 
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.ok("Error obteniendo perfil: " + e.getMessage());
+        }
+    }
+
+    private static UserProfileResponse getUserProfileResponse(User user, List<String> userTypes) {
+        UserProfileResponse profile = new UserProfileResponse();
+        profile.setId(user.getId());
+        profile.setUsername(user.getUsername());
+        profile.setEmail(user.getEmail());
+        profile.setFirstName(user.getFirstName());
+        profile.setLastName(user.getLastName());
+        profile.setCedula(user.getCedula());
+        profile.setPhoneNumber(user.getPhoneNumber());
+        profile.setGender(user.getGender());
+        profile.setIsOnline(user.getIsOnline());
+        profile.setLastLogin(user.getLastLogin());
+        profile.setCreatedAt(user.getCreatedAt());
+        profile.setUpdatedAt(user.getUpdatedAt());
+        profile.setProfilePictureUrl(user.getProfilePictureUrl());
+        profile.setCurrentRoom(user.getCurrentRoom());
+        profile.setSessionId(user.getSessionId());
+        profile.setUserRoles(userTypes);
+        return profile;
+    }
+
+    @Override
+    public User findFirstAdmin() {
+        return userRepository.findFirstAdmin();
+    }
+
+    @Override
+    public AuthResponse approveDriver(String email) {
+        try {
+            // Activar usuario
+            User userOpt = userRepository.findByEmail(email).orElseThrow(
+                    () -> new RuntimeException("Usuario no encontrado"));
+            UserRole userRole = userRoleService.findByUserIdAndRoleId(userOpt.getId(), 3L);
+            userRole.setUserStateId(2L);
+            userRepository.save(userOpt);
+            return new AuthResponse(true, "Driver Aprobado exitosamente");
+        } catch (Exception e) {
+            return new AuthResponse(false, "Error verificando email: " + e.getMessage());
         }
     }
 

@@ -1,5 +1,7 @@
 package com.ryfsystems.ryftaxi.dto;
 
+import com.ryfsystems.ryftaxi.model.VehicleInfo;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,4 +21,7 @@ public class AuthRequest {
 
     @NotNull(message = "El tipo de Usuario es Obligatorio")
     private Long userType;
+
+    @Nullable
+    private VehicleInfo vehicleInfo;
 }

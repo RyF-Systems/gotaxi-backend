@@ -17,4 +17,7 @@ public interface UserService {
     AuthResponse verifyEmail(String email, String verificationCode);
 
     ResponseEntity<?> getUserProfile();
+    User findFirstAdmin();
+
+    AuthResponse approveDriver(String email);
 }

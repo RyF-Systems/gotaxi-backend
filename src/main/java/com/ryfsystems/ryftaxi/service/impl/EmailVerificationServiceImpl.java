@@ -1,5 +1,6 @@
 package com.ryfsystems.ryftaxi.service.impl;
 
+import com.ryfsystems.ryftaxi.dto.AuthRequest;
 import com.ryfsystems.ryftaxi.model.EmailVerification;
 import com.ryfsystems.ryftaxi.model.User;
 import com.ryfsystems.ryftaxi.repository.EmailVerificationRepository;
@@ -45,10 +46,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     @Override
     public void sendVerificationEmail(User user) {
-        if (!emailVerificationEnabled) {
-            log.info("⚠️ Verificación por email deshabilitada");
-            return;
-        }
+        if (emailVerification()) return;
 
         // Invalidar códigos anteriores
         emailVerificationRepository.markAllAsUsed(user.getEmail());
@@ -63,6 +61,25 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         // Enviar email
         try {
             emailService.sendVerificationEmail(user.getEmail(), verificationCode, user.getUsername());
+        } catch (Exception e) {
+            // En desarrollo, simular envío
+            //emailService.sendVerificationEmailDev(user.getEmail(), verificationCode, user.getUsername());
+        }
+    }
+
+    private boolean emailVerification() {
+        if (!emailVerificationEnabled) {
+            log.info("⚠️ Verificación por email deshabilitada");
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void sendApprovalEmail(User user, User admin, AuthRequest request) {
+        if (emailVerification()) return;
+        try {
+            emailService.sendApprovalEmail(user, admin, request);
         } catch (Exception e) {
             // En desarrollo, simular envío
             //emailService.sendVerificationEmailDev(user.getEmail(), verificationCode, user.getUsername());
