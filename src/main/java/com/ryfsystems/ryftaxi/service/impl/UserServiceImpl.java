@@ -90,28 +90,28 @@ public class UserServiceImpl implements UserService {
         try {
             User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(
                     () -> new Exception("Usuario no encontrado"));
-            Long userState = userRoleService.findByUserIdAndRoleId(userOpt.getId(), request.getRoleId()).getUserStateId();
+            UserRole ur = userRoleService.findByUserIdAndRoleId(userOpt.getId(), request.getRoleId());
             if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
                 return new AuthResponse(false, "Usuario / Contraseña incorrecta");
             }
-            if (userState == 2 || userState == 1) {
-                userOpt.setIsOnline(true);
+            userOpt.setIsOnline(true);
+            if (ur.getUserTypeId() == 1 || ur.getUserTypeId() == 2 || ur.getUserTypeId() == 4) {
                 userOpt.setAvailable(true);
+            }
+            if (ur.getUserStateId() == 1 || ur.getUserStateId() == 2) {
                 userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
                 String token = jwtUtil.generateToken(userDetails, userOpt);
-                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), userState, token);
-            } else if (userState == 3) {
+                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
+            } else if (ur.getUserStateId() == 3) {
                 return new AuthResponse(false, "Usuario no Está Activado");
-            } else if (userState == 4) {
+            } else if (ur.getUserStateId() == 4) {
                 return new AuthResponse(false, "Usuario Baneado");
             } else {
-                userOpt.setIsOnline(true);
-                userOpt.setAvailable(true);
                 userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
                 String token = jwtUtil.generateToken(userDetails, userOpt);
-                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), userState, token);
+                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
             }
         } catch (Exception e) {
             return new AuthResponse(false, "Error en login: " + e.getMessage());
@@ -122,9 +122,7 @@ public class UserServiceImpl implements UserService {
     public void logoutUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuario No Encontrado"));
-
-        userRepository.updateUserOnlineStatus(user.getId(), false);
-        userRepository.updateUserAvailability(user.getId(), false);
+        userRepository.updateUserStatusAndAvailability(user.getId(), false, false);
     }
 
     @Override

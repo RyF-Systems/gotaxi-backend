@@ -21,12 +21,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findOnlineUsers();
 
     @Modifying
-    @Query("UPDATE users u SET u.isOnline = :isOnline WHERE u.id = :userId")
-    Long updateUserOnlineStatus(Long userId, boolean isOnline);
-
-    @Modifying
-    @Query("UPDATE users u SET u.available = :isAvailable WHERE u.id = :userId")
-    Long updateUserAvailability(Long userId, boolean isAvailable);
+    @Query("UPDATE users u SET u.isOnline = :isOnline, u.available = :isAvailable WHERE u.id = :userId")
+    Long updateUserStatusAndAvailability(Long userId, boolean isOnline, boolean isAvailable);
 
     @Modifying
     @Query("UPDATE users u SET u.lastLogin = :timestamp WHERE u.id = :userId")
