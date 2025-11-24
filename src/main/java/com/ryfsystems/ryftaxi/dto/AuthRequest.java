@@ -23,5 +23,14 @@ public class AuthRequest {
     private Long userType;
 
     @Nullable
+    private String firstName;
+
+    @Nullable
+    private String lastName;
+
+    @Nullable
+    private String phone;
+
+    @Nullable
     private VehicleInfo vehicleInfo;
 }

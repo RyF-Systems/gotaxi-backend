@@ -151,11 +151,6 @@
             </div>
 
             <div class="info-row">
-                <div class="info-label">ID/Tipo:</div>
-                <div class="info-value" th:text="${driverId}">ID del conductor</div>
-            </div>
-
-            <div class="info-row">
                 <div class="info-label">Vehículo:</div>
                 <div class="info-value" th:text="${vehicleInfo}">Información del vehículo</div>
             </div>
@@ -172,7 +167,7 @@
         <p>Por favor, revisa la información y documentos del conductor para proceder con la aprobación o rechazo de la solicitud.</p>
 
         <div class="button-container">
-            <a th:href="${baseUrl} + '/api/auth/approve?&email=' + ${email}" class="button">Aprobar Solicitud</a>
+            <a th:href="${baseUrl} + '/api/auth/approve?&email=' + ${driverEmail}" class="button">Aprobar Solicitud</a>
         </div>
 
         <p><strong>Nota:</strong> Esta solicitud será automáticamente rechazada si no se revisa en un plazo de 72 horas.</p>

@@ -7,6 +7,7 @@ import com.ryfsystems.ryftaxi.dto.UserProfileResponse;
 import com.ryfsystems.ryftaxi.model.User;
 import com.ryfsystems.ryftaxi.model.UserRole;
 import com.ryfsystems.ryftaxi.model.UserType;
+import com.ryfsystems.ryftaxi.model.VehicleInfo;
 import com.ryfsystems.ryftaxi.repository.UserRepository;
 import com.ryfsystems.ryftaxi.service.*;
 import com.ryfsystems.ryftaxi.utils.JwtUtil;
@@ -35,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final CustomUserDetailsService userDetailsService;
     private final EmailVerificationService emailVerificationService;
     private final JwtUtil jwtUtil;
+    private final VehicleService vehicleService;
 
     @Override
     public AuthResponse registerUser(AuthRequest request) {
@@ -45,7 +47,6 @@ public class UserServiceImpl implements UserService {
             if (userRepository.existsByEmail(request.getEmail())) {
                 return new AuthResponse(false, "El email ya está registrado");
             }
-
             UserType userType = userTypeService.findById(request.getUserType());
             if (userType == null) {
                 return new AuthResponse(false, "Tipo de usuario no válido");
@@ -54,6 +55,7 @@ public class UserServiceImpl implements UserService {
             if (request.getUserType() == 3) {
                 registerRole(saved.getId(), request.getUserType(), 1L);
                 User admin = this.findFirstAdmin();
+                saveVehicleInfo(request.getVehicleInfo(), saved.getId());
                 emailVerificationService.sendApprovalEmail(saved, admin, request);
                 return new AuthResponse(true, "Usuario registrado exitosamente en espera de aprobación",
                         saved.getUsername(), null, null);
@@ -71,11 +73,20 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private void saveVehicleInfo(VehicleInfo vehicleInfo, Long id) {
+        vehicleInfo.setUserId(id);
+        vehicleService.setVehicleInfo(vehicleInfo);
+    }
+
     private User saveNewUser(AuthRequest request) {
         User newUser = new User();
+        newUser.setPhoneNumber(request.getPhone() != null ? request.getPhone() : null);
+        newUser.setFirstName(request.getFirstName() != null ? request.getFirstName() : null);
+        newUser.setLastName(request.getLastName() != null ? request.getLastName() : null);
         newUser.setUsername(request.getUsername());
         newUser.setEmail(request.getEmail());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        newUser.setAvailable(false);
         newUser.setIsOnline(false);
         return userRepository.save(newUser);
     }

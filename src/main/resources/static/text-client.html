@@ -657,7 +657,7 @@
         if (username && username !== 'Usuario') {
             console.log('🔄 Conectando automáticamente con usuario:', username);
 
-            // Pequeño delay para asegurar que todo esté cargado
+            // Pequeño delay para asegurar que esté completamente cargado
             setTimeout(() => {
                 connect();
             }, 1000);
@@ -1055,7 +1055,7 @@
         if (value.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
             debouncedStartTyping();
         } else if (value.length === 0) {
-            // Si se borró todo el texto, detener typing
+            // Si se borró el texto completamente, detener typing
             stopTyping();
         }
     }
@@ -1087,24 +1087,6 @@
         stopTyping();
         console.log('👋 Input perdió foco - typing detenido');
     }
-
-    /*function startTyping() {
-        const username = elements.username ? elements.username.value : '';
-        const roomId = elements.roomId ? elements.roomId.value : '';
-
-        safeSend({
-            type: 'TYPING',
-            sender: username,
-            roomId: roomId,
-            content: 'está escribiendo...'
-        });
-
-        // Configurar timer para limpiar el estado de typing
-        if (typingTimer) clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => {
-            // Podría enviarse un mensaje para limpiar el estado
-        }, 3000);
-    }*/
 
     // Funciones de Mensajes - CON VERIFICACIÓN
     function displayMessage(message) {
@@ -1401,7 +1383,7 @@
         if (!dateString) return '-';
 
         // Si ya es una fecha válida en formato ISO
-        if (dateString.includes('T') && !isNaN(new Date(dateString).getTime())) {
+        if (dateString.includes('T') && !Number.isNaN(new Date(dateString).getTime())) {
             const date = new Date(dateString);
             return date.toLocaleString('es-ES', {
                 year: 'numeric',
@@ -1419,7 +1401,7 @@
 
         // Para cualquier otro formato, intentar con Date nativo
         const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
             return date.toLocaleString('es-ES', {
                 year: 'numeric',
                 month: '2-digit',

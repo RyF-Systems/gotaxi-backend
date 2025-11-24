@@ -80,7 +80,6 @@ public class EmailServiceImpl implements EmailService {
             context.setVariable("driverFullName", driver.getFirstName() +  " " + driver.getLastName());
             context.setVariable("driverEmail", driver.getEmail());
             context.setVariable("driverPhone", driver.getPhoneNumber());
-            context.setVariable("driverId", driver.getId());
             context.setVariable("vehicleInfo", request.getVehicleInfo());
             context.setVariable("verificationStatus", "Pendiente de revisión");
             context.setVariable("requestDate", new Date());

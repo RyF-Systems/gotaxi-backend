@@ -1,9 +1,6 @@
 package com.ryfsystems.ryftaxi.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Data
@@ -19,11 +16,11 @@ public class VehicleInfo {
     private String model;
     private String color;
     private Long year;
+    @Column(unique = true)
     private String plate;
 
     @Override
     public String toString() {
-        return brand + ',' + model + ' '
-                + color + '-' + year + ". " + plate;
+        return brand + ' ' + model + ' ' + color + '-' + year + ". Placa: " + plate;
     }
 }
