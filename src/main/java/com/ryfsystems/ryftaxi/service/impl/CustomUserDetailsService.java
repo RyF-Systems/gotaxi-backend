@@ -1,4 +1,4 @@
-package com.ryfsystems.ryftaxi.service;
+package com.ryfsystems.ryftaxi.service.impl;
 
 
 import com.ryfsystems.ryftaxi.model.UserType;

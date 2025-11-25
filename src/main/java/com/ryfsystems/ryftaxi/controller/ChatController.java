@@ -11,7 +11,7 @@ import java.util.Map;
 @RequestMapping("/api/chat")
 public class ChatController {
     private final ChatWebSocketHandler chatHandler;
-    
+
     public ChatController(ChatWebSocketHandler chatHandler) {
         this.chatHandler = chatHandler;
     }
@@ -20,9 +20,10 @@ public class ChatController {
     @GetMapping("/stats")
     public Map<String, Object> getStats() {
         return Map.of(
-            "activeUsers", chatHandler.getActiveUsersCount(),
-            "activeRooms", chatHandler.getActiveRoomsCount(),
-            "totalSessions", chatHandler.getTotalSessions()
+                "activeUsers", chatHandler.getActiveUsersCount(),
+                "activeRooms", chatHandler.getActiveRoomsCount(),
+                "totalSessions", chatHandler.getTotalSessions(),
+                "totalMessages", chatHandler.getMessageStats()
         );
     }
 

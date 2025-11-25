@@ -1,14 +1,13 @@
-package com.ryfsystems.ryftaxi.model;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+package com.ryfsystems.ryftaxi.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ryfsystems.ryftaxi.enums.MessageType;
-
 import lombok.Data;
 import lombok.ToString;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @ToString
