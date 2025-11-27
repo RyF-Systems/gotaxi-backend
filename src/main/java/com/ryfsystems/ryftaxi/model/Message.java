@@ -24,7 +24,7 @@ public class Message {
     @Column(name = "message_type", nullable = false)
     private MessageType type;
 
-    @Column(name = "content", columnDefinition = "TEXT")
+    @Column(name = "content")
     private String content;
 
     @Column(name = "sender", nullable = false)
@@ -42,7 +42,7 @@ public class Message {
     // Constructor para convertir desde ChatMessage
     public Message(ChatMessage chatMessage) {
         this.type = chatMessage.getType();
-        this.content = chatMessage.getContent();
+        this.content = chatMessage.getContent().toString();
         this.sender = chatMessage.getSender();
         this.roomId = chatMessage.getRoomId();
         this.timestamp = LocalDateTime.parse(chatMessage.getTimestamp());

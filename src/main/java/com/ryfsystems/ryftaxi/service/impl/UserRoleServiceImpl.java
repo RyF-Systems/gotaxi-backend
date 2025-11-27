@@ -39,4 +39,9 @@ public class UserRoleServiceImpl implements UserRoleService {
     public void save(UserRole userRole) {
         userRoleRepository.save(userRole);
     }
+
+    @Override
+    public Boolean existsByUserIdAndRoleId(Long userId, Long roleId) {
+        return userRoleRepository.existsByUserIdAndUserTypeId(userId, roleId);
+    }
 }

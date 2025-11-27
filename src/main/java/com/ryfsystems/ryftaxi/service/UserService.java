@@ -20,4 +20,6 @@ public interface UserService {
     User findFirstAdmin();
 
     AuthResponse approveDriver(String email);
+
+    User findById(Long riderId);
 }

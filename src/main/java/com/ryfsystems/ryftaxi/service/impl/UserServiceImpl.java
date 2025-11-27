@@ -101,31 +101,43 @@ public class UserServiceImpl implements UserService {
         try {
             User userOpt = userRepository.findByUsername(request.getUsername()).orElseThrow(
                     () -> new Exception("Usuario no encontrado"));
-            UserRole ur = userRoleService.findByUserIdAndRoleId(userOpt.getId(), request.getRoleId());
-            if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
-                return new AuthResponse(false, "Usuario / Contraseña incorrecta");
-            }
-            userOpt.setIsOnline(true);
-            if (ur.getUserTypeId() == 1 || ur.getUserTypeId() == 2 || ur.getUserTypeId() == 4) {
-                userOpt.setAvailable(true);
-            }
-            if (ur.getUserStateId() == 1 || ur.getUserStateId() == 2) {
-                userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
-                String token = jwtUtil.generateToken(userDetails, userOpt);
-                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
-            } else if (ur.getUserStateId() == 3) {
-                return new AuthResponse(false, "Usuario no Está Activado");
-            } else if (ur.getUserStateId() == 4) {
-                return new AuthResponse(false, "Usuario Baneado");
+            List<Long> urBd = userRoleService.findByUserId(userOpt.getId())
+                    .stream()
+                    .map(UserRole::getUserId)
+                    .toList();
+            if (!urBd.isEmpty() && (urBd.contains(1L) || urBd.contains(2L))) {
+                return goLogin(userOpt, request, urBd.get(0));
             } else {
-                userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
-                String token = jwtUtil.generateToken(userDetails, userOpt);
-                return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
+                return goLogin(userOpt, request, request.getRoleId());
             }
         } catch (Exception e) {
             return new AuthResponse(false, "Error en login: " + e.getMessage());
+        }
+    }
+
+    private AuthResponse goLogin(User userOpt, LoginRequest request, Long userRoleId) {
+        UserRole ur = userRoleService.findByUserIdAndRoleId(userOpt.getId(), userRoleId);
+        if (!passwordEncoder.matches(request.getPassword(), userOpt.getPassword())) {
+            return new AuthResponse(false, "Usuario / Contraseña incorrecta");
+        }
+        userOpt.setIsOnline(true);
+        if (ur.getUserTypeId() == 1 || ur.getUserTypeId() == 2 || ur.getUserTypeId() == 4) {
+            userOpt.setAvailable(true);
+        }
+        if (ur.getUserStateId() == 1 || ur.getUserStateId() == 2) {
+            userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
+            String token = jwtUtil.generateToken(userDetails, userOpt);
+            return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
+        } else if (ur.getUserStateId() == 3) {
+            return new AuthResponse(false, "Usuario no Está Activado");
+        } else if (ur.getUserStateId() == 4) {
+            return new AuthResponse(false, "Usuario Baneado");
+        } else {
+            userRepository.updateLastLogin(userOpt.getId(), new Date().toString());
+            UserDetails userDetails = userDetailsService.loadUserByUsername(userOpt.getUsername());
+            String token = jwtUtil.generateToken(userDetails, userOpt);
+            return new AuthResponse(true, "Login exitoso", userOpt.getUsername(), ur.getUserStateId(), token);
         }
     }
 
@@ -227,6 +239,11 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             return new AuthResponse(false, "Error verificando email: " + e.getMessage());
         }
+    }
+
+    @Override
+    public User findById(Long riderId) {
+        return userRepository.findById(riderId).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     }
 
     public List<User> getOnlineUsers() {

@@ -5,9 +5,9 @@ import com.ryfsystems.ryftaxi.model.UserRole;
 import java.util.List;
 
 public interface UserRoleService {
-
     List<UserRole> findByUserId(Long userId);
     List<UserRole> findByRoleId(Long roleId);
     UserRole findByUserIdAndRoleId(Long userId, Long roleId);
     void save(UserRole userRole);
+    Boolean existsByUserIdAndRoleId(Long userId, Long roleId);
 }

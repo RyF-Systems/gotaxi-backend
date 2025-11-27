@@ -4,12 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ryfsystems.ryftaxi.dto.ChatMessage;
+import com.ryfsystems.ryftaxi.dto.TaxiRideRequest;
 import com.ryfsystems.ryftaxi.enums.MessageType;
 import com.ryfsystems.ryftaxi.model.User;
+import com.ryfsystems.ryftaxi.model.UserRole;
 import com.ryfsystems.ryftaxi.service.MessageService;
+import com.ryfsystems.ryftaxi.service.TaxiRideService;
+import com.ryfsystems.ryftaxi.service.UserRoleService;
 import com.ryfsystems.ryftaxi.service.UserService;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -28,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
+@RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final ObjectMapper objectMapper;
@@ -38,13 +44,16 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final Sinks.Many<ChatMessage> messageSink = Sinks.many().multicast().onBackpressureBuffer();
     private final Flux<ChatMessage> messageFlux = messageSink.asFlux();
 
-    @Autowired
-    private MessageService messageService;
+    private final MessageService messageService;
+    private final TaxiRideService taxiRideService;
+    private final UserService userService;
+    private final UserRoleService userRoleService;
 
-    @Autowired
-    private UserService userService;
-
-    public ChatWebSocketHandler() {
+    public ChatWebSocketHandler(MessageService messageService, TaxiRideService taxiRideService, UserService userService, UserRoleService userRoleService) {
+        this.messageService = messageService;
+        this.taxiRideService = taxiRideService;
+        this.userService = userService;
+        this.userRoleService = userRoleService;
         // Crear y configurar ObjectMapper directamente aquí
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
@@ -53,6 +62,12 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         log.debug("✅ ObjectMapper configurado con JavaTimeModule");
         log.debug("📋 Módulos registrados: " + objectMapper.getRegisteredModuleIds());
+    }
+
+    @PostConstruct
+    public void init() {
+        taxiRideService.loadActiveServicesToCache();
+        log.info("🔄 Servicios activos cargados desde BD");
     }
 
 
@@ -101,6 +116,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 break;
             case STOP_TYPING:
                 handleStopTyping(session, chatMessage);
+                break;
+            case SERVICE_STATUS_UPDATE:
+                handleServiceStarted(session, chatMessage);
+                break;
         }
     }
 
@@ -174,6 +193,105 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (user != null) {
             message.setSender(user.getUsername());
             messageSink.tryEmitNext(message);
+        }
+    }
+
+    private void handleServiceRequest(WebSocketSession session, ChatMessage message) {
+        try {
+            User user = users.get(session.getId());
+            if (user != null && userRoleService.existsByUserIdAndRoleId(user.getId(), 4L)) {
+                sendError(session, "Solo los usuarios tipo rider pueden solicitar servicios");
+                return;
+            }
+
+            TaxiRideRequest serviceRequest = message.getTaxiRideRequest();
+            serviceRequest.setRiderId(user.getId());
+            serviceRequest.setRiderName(user.getUsername());
+
+            // Crear solicitud de servicio
+            TaxiRideRequest createdRequest = taxiRideService.createServiceRequest(serviceRequest);
+
+            // Crear mensaje de respuesta
+            ChatMessage responseMessage = new ChatMessage(
+                    MessageType.SERVICE_REQUEST,
+                    createdRequest,
+                    user.getUsername()
+            );
+
+            // Broadcast a todos los drivers conectados y disponibles
+            broadcastToDrivers(responseMessage);
+
+            // También enviar confirmación al rider
+            ChatMessage confirmationMessage = new ChatMessage(
+                    MessageType.SERVICE_STATUS_UPDATE,
+                    createdRequest,
+                    "System"
+            );
+            sendMessageToSession(session, confirmationMessage);
+
+            log.info("🚖 Solicitud de servicio creada: {}", createdRequest.getRequestId());
+
+        } catch (Exception e) {
+            log.error("Error procesando solicitud de servicio: {}", e.getMessage());
+            sendError(session, "Error al crear solicitud de servicio: " + e.getMessage());
+        }
+    }
+
+    private void handleServiceStarted(WebSocketSession session, ChatMessage message) {
+        User driver = users.get(session.getId());
+
+        if (driver != null && userRoleService.existsByUserIdAndRoleId(driver.getId(), 3L)) {
+            String requestId = message.getContent().toString();
+            TaxiRideRequest startedRequest = taxiRideService.startService(requestId, driver.getId() );
+
+            if (startedRequest != null) {
+                // Notificar al rider
+                ChatMessage notification = new ChatMessage(
+                        MessageType.SERVICE_STATUS_UPDATE,
+                        startedRequest,
+                        driver.getUsername()
+                );
+                sendToUser(startedRequest.getRiderId(), notification);
+
+                log.info("🚗 Servicio {} iniciado por driver {}", requestId, driver.getUsername());
+            }
+        }
+    }
+
+    private void sendToUser(Long userId, ChatMessage message) {
+        for (Map.Entry<String, User> entry : users.entrySet()) {
+            User user = entry.getValue();
+            if (user.getId().equals(userId)) {
+                WebSocketSession userSession = sessions.get(user.getSessionId());
+                if (userSession != null && userSession.isOpen()) {
+                    sendMessageToSession(userSession, message);
+                } else {
+                    log.debug("⚠️ No se pudo enviar mensaje - Sesión cerrada para usuario: {}", userId);
+                    cleanupClosedSession(user.getSessionId());
+                }
+                break;
+            }
+        }
+    }
+
+    private void broadcastToDrivers(ChatMessage message) {
+        broadcastToUserType(3L, message);
+        log.debug("📢 Mensaje broadcast a todos los drivers: {}", message.getType());
+    }
+
+    private void broadcastToUserType(Long userType, ChatMessage message) {
+        for (Map.Entry<String, User> entry : users.entrySet()) {
+            User user = entry.getValue();
+            UserRole userRole = userRoleService.findByUserIdAndRoleId(user.getId(), userType);
+            if (userRole.getUserTypeId().equals(userType)) {
+                WebSocketSession userSession = sessions.get(user.getSessionId());
+                if (userSession != null && userSession.isOpen()) {
+                    sendMessageToSession(userSession, message);
+                } else {
+                    log.debug("⚠️ Sesión cerrada para usuario: {}", user.getUsername());
+                    cleanupClosedSession(user.getSessionId());
+                }
+            }
         }
     }
 
@@ -329,30 +447,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return messageService.getRecentRoomMessages(roomId, limit);
     }
 
-    /**
-     * Obtiene el número de usuarios activos
-     */
     public int getActiveUsersCount() {
         return users.size();
     }
 
-    /**
-     * Obtiene el número de salas activas
-     */
     public int getActiveRoomsCount() {
         return roomUsers.size();
     }
 
-    /**
-     * Obtiene el número total de sesiones activas
-     */
     public int getTotalSessions() {
         return sessions.size();
     }
 
-    /**
-     * Obtiene estadísticas detalladas por sala
-     */
     public Map<String, Object> getDetailedStats() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("activeUsers", getActiveUsersCount());
@@ -374,9 +480,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         return stats;
     }
 
-    /**
-     * Obtiene información de una sala específica
-     */
     public Map<String, Object> getRoomInfo(String roomId) {
         Map<String, User> room = roomUsers.get(roomId);
         if (room == null) {
@@ -409,5 +512,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             stats.put(roomId, messageCount);
         }
         return stats;
+    }
+
+    public Map<String, Object> getFullStats() {
+        return taxiRideService.countServiceByStatus();
     }
 }

@@ -32,4 +32,10 @@ public class ChatController {
     public Map<String, Object> getStatistics() {
         return chatHandler.getDetailedStats();
     }
+
+    @PreAuthorize("hasAuthority('ROLE_SUPERADMIN')")
+    @GetMapping("/full-stats")
+    public Map<String, Object> getFullStats() {
+        return chatHandler.getFullStats();
+    }
 }
