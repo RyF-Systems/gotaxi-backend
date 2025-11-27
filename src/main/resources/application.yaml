@@ -4,7 +4,7 @@ app:
       enabled: true
       expiration-minutes: 30
     sender: ryftaxi@gmail.com
-    base-url: http://localhost:8080
+    base-url: http://192.168.5.192:8080
 jwt:
   expiration-ms: 86400000
   issuer: ryftaxi-app
@@ -15,6 +15,11 @@ server:
 spring:
   application:
     name: ryftaxi
+  cache:
+    caffeine:
+      spec: maximumSize=500, expireAfterWrite=60s
+    cache-names: userProfileCache
+    type: caffeine
   datasource:
     url: jdbc:mysql://localhost:3306/ryftaxi?useSSL=false&serverTimezone=UTC
     username: root

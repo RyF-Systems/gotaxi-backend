@@ -48,7 +48,7 @@ public class SecurityConfig {
                         autz.requestMatchers("/api/auth/register").permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
                                 .requestMatchers("/ws/**").permitAll()
-                                .requestMatchers("/**").permitAll()
+                                .requestMatchers("/**").permitAll() //Todo: Revisar por que falla el Login
                                 .requestMatchers("/login.html", "/static/**", "/error").permitAll()
                                 .requestMatchers("/").permitAll()
                                 .anyRequest().authenticated())

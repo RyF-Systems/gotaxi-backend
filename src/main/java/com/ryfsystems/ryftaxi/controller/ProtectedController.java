@@ -17,7 +17,6 @@ public class ProtectedController {
     @GetMapping("/profile")
     public ResponseEntity<Map<String, Object>> getUserProfile(Authentication authentication) {
         String username = authentication.getName();
-
         return ResponseEntity.ok(Map.of(
                 "username", username,
                 "message", "Esta es una ruta protegida con JWT",

@@ -13,6 +13,7 @@ import com.ryfsystems.ryftaxi.service.*;
 import com.ryfsystems.ryftaxi.utils.JwtUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -184,20 +185,23 @@ public class UserServiceImpl implements UserService {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             String username = authentication.getName();
-            User user = userRepository.findByUsername(username).orElseThrow(
-                    () -> new RuntimeException("Usuario no encontrado"));
-
-            List<Long> userRoles = userRoleService.findByUserId(user.getId())
-                    .stream().map(UserRole::getUserTypeId).toList();
-            List<String> userTypes = userTypeService.getByIdIn(userRoles)
-                    .stream().map(UserType::getTypeName).toList();
-
-            UserProfileResponse profile = getUserProfileResponse(user, userTypes);
-
+            UserProfileResponse profile = getCachedUserProfile(username);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.ok("Error obteniendo perfil: " + e.getMessage());
         }
+    }
+
+
+    @Cacheable(value = "userProfileCache", key = "#username")
+    public UserProfileResponse getCachedUserProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        List<Long> userRoles = userRoleService.findByUserId(user.getId())
+                .stream().map(UserRole::getUserTypeId).toList();
+        List<String> userTypes = userTypeService.getByIdIn(userRoles)
+                .stream().map(UserType::getTypeName).toList();
+        return getUserProfileResponse(user, userTypes);
     }
 
     private static UserProfileResponse getUserProfileResponse(User user, List<String> userTypes) {
