@@ -1,0 +1,37 @@
+@baseUrl = http://192.168.31.123:8080/api
+
+### Login (Rider)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "rider",
+    "password": "password123"
+}
+
+### Login (Driver)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "username": "driver",
+    "password": "password123"
+}
+
+### Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+    "username": "newuser",
+    "email": "new@test.com",
+    "password": "password123",
+    "userType": 4,
+    "firstName": "New",
+    "lastName": "User",
+    "phone": "1234567890"
+}
+
+### Get Rider History
+GET {{baseUrl}}/rides/rider/2
+Content-Type: application/json
