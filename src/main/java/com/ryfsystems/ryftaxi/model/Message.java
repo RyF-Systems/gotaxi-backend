@@ -2,6 +2,7 @@ package com.ryfsystems.ryftaxi.model;
 
 import com.ryfsystems.ryftaxi.dto.ChatMessage;
 import com.ryfsystems.ryftaxi.enums.MessageType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Table(name = "chat_messages")
 @NoArgsConstructor
 @AllArgsConstructor
+@Schema(description = "Modelo para mensajes de chat y servicios WebSocket")
 public class Message {
 
     @Id
