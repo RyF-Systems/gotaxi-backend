@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Table(name = "chat_messages")
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Modelo para mensajes de chat y servicios WebSocket")
 public class Message {
 
     @Id

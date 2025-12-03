@@ -42,27 +42,48 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.ignoringRequestMatchers(
-                        "/ws/**",
-                        "/api/websocket/**",
-                        "/swagger-ui/**",
-                        "/api-docs/**"
-                ))
+                .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(autz ->
-                        autz.requestMatchers("/api/auth/register").permitAll()
-                                .requestMatchers("/api/auth/login").permitAll()
-                                .requestMatchers("/swagger-ui.html",
-                                        "/swagger-ui/**",
-                                        "/api-docs/**",
-                                        "/v3/api-docs/**",
-                                        "/webjars/**").permitAll()
-                                .requestMatchers("/ws/**").permitAll()
-                                .requestMatchers("/**").permitAll() //Todo: Revisar por que falla el Login
-                                .requestMatchers("/login.html", "/static/**", "/error").permitAll()
-                                .requestMatchers("/").permitAll()
-                                .anyRequest().authenticated())
-                .formLogin(form -> form.disable())
+                .authorizeHttpRequests(authz -> authz
+                        // Endpoints públicos
+                        .requestMatchers(
+                                // Autenticación
+                                "/api/auth/**",
+
+                                // WebSocket
+                                "/ws/**",
+                                "/websocket/**",
+
+                                // Swagger/OpenAPI
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/api-docs/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**",
+
+                                // Archivos estáticos
+                                "/",
+                                "/index.html",
+                                "/static/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico",
+
+                                // Health check
+                                "/actuator/health",
+                                "/api/health",
+
+                                // Pruebas
+                                "/test/**"
+                        ).permitAll()
+
+                        // Endpoints que requieren autenticación
+                        .requestMatchers("/api/**").authenticated()
+
+                        // Todo lo demás requiere autenticación
+                        .anyRequest().authenticated()
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
