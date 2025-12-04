@@ -5,6 +5,12 @@ app:
       expiration-minutes: 30
     sender: ryftaxi@gmail.com
     base-url: http://192.168.5.192:8080
+  dolar-api:
+    url: https://ve.dolarapi.com/v1/dolares
+    timeout: 5000
+    retry:
+      max-attempts: 3
+      delay: 1000
 jwt:
   expiration-ms: 86400000
   issuer: ryftaxi-app

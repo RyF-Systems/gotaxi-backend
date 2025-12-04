@@ -1,5 +1,6 @@
 package com.ryfsystems.ryftaxi.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,21 +48,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Endpoints públicos
                         .requestMatchers(
-                                // Autenticación
                                 "/api/auth/**",
-
-                                // WebSocket
                                 "/ws/**",
                                 "/websocket/**",
-
-                                // Swagger/OpenAPI
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/api-docs/**",
                                 "/v3/api-docs/**",
                                 "/webjars/**",
-
-                                // Archivos estáticos
                                 "/",
                                 "/index.html",
                                 "/static/**",
@@ -69,20 +63,38 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/favicon.ico",
-
-                                // Health check
                                 "/actuator/health",
                                 "/api/health",
-
-                                // Pruebas
                                 "/test/**"
                         ).permitAll()
-
-                        // Endpoints que requieren autenticación
                         .requestMatchers("/api/**").authenticated()
-
-                        // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write(
+                                    String.format(
+                                            "{\"error\": \"%s\", \"message\": \"%s\", \"path\": \"%s\"}",
+                                            "Unauthorized",
+                                            "Token JWT requerido o inválido",
+                                            request.getRequestURI()
+                                    )
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.getWriter().write(
+                                    String.format(
+                                            "{\"error\": \"%s\", \"message\": \"%s\", \"path\": \"%s\"}",
+                                            "Forbidden",
+                                            "No tiene permisos para acceder a este recurso",
+                                            request.getRequestURI()
+                                    )
+                            );
+                        })
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -93,7 +105,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of("*"));
-        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
         corsConfiguration.setExposedHeaders(List.of("Authorization"));
 

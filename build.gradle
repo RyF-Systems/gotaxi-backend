@@ -47,6 +47,7 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.3'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+    runtimeOnly 'io.netty:netty-resolver-dns-native-macos:4.1.111.Final:osx-aarch_64'
     
     // MySQL Connector
     runtimeOnly 'com.mysql:mysql-connector-j'
