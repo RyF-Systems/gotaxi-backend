@@ -3,6 +3,7 @@ package com.ryfsystems.ryftaxi.dto;
 import com.ryfsystems.ryftaxi.enums.ServiceStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Modelo para solicitud de viaje en taxi")
+@Builder
 public class TaxiRideRequest {
 
     @Schema(description = "ID único de la solicitud", example = "req_1701945000000_123", readOnly = true)

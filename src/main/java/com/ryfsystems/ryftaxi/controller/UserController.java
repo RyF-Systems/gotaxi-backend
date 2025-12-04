@@ -3,6 +3,7 @@ package com.ryfsystems.ryftaxi.controller;
 import com.ryfsystems.ryftaxi.model.UserType;
 import com.ryfsystems.ryftaxi.service.UserService;
 import com.ryfsystems.ryftaxi.service.UserTypeService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final UserTypeService userTypeService;

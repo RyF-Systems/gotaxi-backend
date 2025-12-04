@@ -4,14 +4,14 @@ app:
       enabled: true
       expiration-minutes: 30
     sender: ryftaxi@gmail.com
-    base-url: http://192.168.5.107:8080
+    base-url: http://192.168.5.192:8080
 jwt:
   expiration-ms: 86400000
   issuer: ryftaxi-app
   secret-key: mySuperSecretKeyForJWTGenerationInSpringBootApplication2025ThatShouldBeVeryLongAndSecure
 ryftaxi:
   openapi:
-    dev-url: http://192.168.5.107:8080
+    dev-url: http://192.168.5.192:8080
     prod-url: https://ryftaxi-production.com
 server:
   address: 0.0.0.0
@@ -19,6 +19,9 @@ server:
 spring:
   application:
     name: ryftaxi
+  banner:
+    enabled: true
+    location: classpath:banner.txt
   cache:
     caffeine:
       spec: maximumSize=500, expireAfterWrite=60s

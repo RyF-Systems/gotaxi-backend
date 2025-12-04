@@ -1,9 +1,14 @@
 package com.ryfsystems.ryftaxi.config;
 
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +17,14 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
+@SecurityScheme(
+        name = "bearerAuth", // Nombre que usarás en @SecurityRequirement
+        description = "Token JWT",
+        scheme = "bearer",
+        type = SecuritySchemeType.HTTP,
+        bearerFormat = "JWT",
+        in = SecuritySchemeIn.HEADER
+)
 public class OpenAPIConfig {
 
     @Value("${ryftaxi.openapi.dev-url}")
@@ -44,8 +57,21 @@ public class OpenAPIConfig {
                 .contact(contact)
                 .license(mitLicense);
 
-        return  new OpenAPI()
+        SecurityRequirement securityRequirement = new SecurityRequirement()
+                .addList("bearerAuth");
+
+        return new OpenAPI()
                 .info(info)
-                .servers(List.of(devServer, prodServer));
+                .servers(List.of(devServer, prodServer))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new io.swagger.v3.oas.models.security.SecurityScheme()
+                                        .name("bearerAuth")
+                                        .type(io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .description("Ingresa tu token JWT. Ejemplo: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+                        )
+                );
     }
 }
