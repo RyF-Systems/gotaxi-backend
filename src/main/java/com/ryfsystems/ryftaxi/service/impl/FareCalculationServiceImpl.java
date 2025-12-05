@@ -53,7 +53,6 @@ public class FareCalculationServiceImpl implements FareCalculationService {
     }
 
     public double calculateFare(double distanceKm, BusinessConfiguration bc) {
-
         double baseFare1ToBonus = bc.getBasePriceUsd();
         double costPerKmAfterBonus = bc.getFractionPriceUsd();
         double fare;
@@ -69,10 +68,8 @@ public class FareCalculationServiceImpl implements FareCalculationService {
     }
 
     public Map<String, Object> calculateFareWithTaxes(double baseFare, BusinessConfiguration bc) {
-        ExchangeRates er = exchangeRatesService.findByDate(LocalDate.now());
-        if (er == null) {
-            er = exchangeRatesService.updateOfficialRate();
-        }
+        ExchangeRates er = exchangeRatesService.updateOfficialRate();
+
         double bsFare = baseFare * er.getAmountRate();
         double taxPercentage = bc.getTaxIva();
         // Calcular impuestos
