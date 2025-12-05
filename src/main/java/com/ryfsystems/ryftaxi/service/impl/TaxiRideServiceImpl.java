@@ -1,10 +1,13 @@
 package com.ryfsystems.ryftaxi.service.impl;
 
+import com.ryfsystems.ryftaxi.dto.PriceRequest;
+import com.ryfsystems.ryftaxi.dto.PriceResponse;
 import com.ryfsystems.ryftaxi.dto.TaxiRideRequest;
 import com.ryfsystems.ryftaxi.enums.ServiceStatus;
 import com.ryfsystems.ryftaxi.model.TaxiRide;
 import com.ryfsystems.ryftaxi.model.User;
 import com.ryfsystems.ryftaxi.repository.TaxiRideRepository;
+import com.ryfsystems.ryftaxi.service.FareCalculationService;
 import com.ryfsystems.ryftaxi.service.TaxiRideService;
 import com.ryfsystems.ryftaxi.service.UserRoleService;
 import com.ryfsystems.ryftaxi.service.UserService;
@@ -30,6 +33,7 @@ public class TaxiRideServiceImpl implements TaxiRideService {
     private final UserService userService;
     private final UserRoleService userRoleService;
     private final TaxiRideRepository taxiRideRepository;
+    private final FareCalculationService fareCalculationService;
 
     private final Map<String, TaxiRideRequest> activeRequests = new ConcurrentHashMap<>();
     private final Map<Long, String> riderToRequestMap = new ConcurrentHashMap<>();
@@ -273,5 +277,23 @@ public class TaxiRideServiceImpl implements TaxiRideService {
     public Optional<TaxiRideRequest> getServiceByRequestId(String requestId) {
         return taxiRideRepository.findByRequestId(requestId)
                 .map(TaxiRide::toTaxiServiceRequest);
+    }
+
+    @Override
+    public PriceResponse getEstimatedPrice(PriceRequest request) {
+        if (request.getPickupLat() == null || request.getPickupLng() == null ||
+                request.getDestinationLat() == null || request.getDestinationLng() == null) {
+            throw new IllegalArgumentException("Se requieren coordenadas de recogida y destino");
+        }
+
+        Map<String, Object> fareResponse = fareCalculationService.calculateFareFromCoordinates(request);
+        return PriceResponse.builder()
+                .estimatedUsdPrice((Double) fareResponse.get("estimatedUsd"))
+                .subtotalBs((Double) fareResponse.get("subtotalBs"))
+                .taxIva((Double) fareResponse.get("taxIva"))
+                .amountIva((Double) fareResponse.get("amountIva"))
+                .estimatedBsPrice((Double) fareResponse.get("estimatedBs"))
+                .distance((Double) fareResponse.get("distanceKm"))
+                .build();
     }
 }

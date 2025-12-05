@@ -1,5 +1,7 @@
 package com.ryfsystems.ryftaxi.controller;
 
+import com.ryfsystems.ryftaxi.dto.PriceRequest;
+import com.ryfsystems.ryftaxi.dto.PriceResponse;
 import com.ryfsystems.ryftaxi.dto.TaxiRideRequest;
 import com.ryfsystems.ryftaxi.service.TaxiRideService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
 
@@ -160,5 +163,13 @@ public class TaxiRideController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(createdRequest);
+    }
+
+    @PostMapping("/get-price")
+    @PreAuthorize("hasAuthority('ROLE_RIDER')")
+    public ResponseEntity<PriceResponse> getPrice(@Valid @RequestBody PriceRequest priceRequest) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(taxiRideService.getEstimatedPrice(priceRequest));
     }
 }

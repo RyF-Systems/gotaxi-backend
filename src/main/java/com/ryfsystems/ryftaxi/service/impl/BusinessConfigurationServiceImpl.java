@@ -36,6 +36,7 @@ public class BusinessConfigurationServiceImpl implements BusinessConfigurationSe
         existingConfig.setName(patchDTO.name());
         existingConfig.setBasePriceUsd(patchDTO.basePriceUsd());
         existingConfig.setFractionPriceUsd(patchDTO.fractionPriceUsd());
+        existingConfig.setMinDistanceBonus(patchDTO.minDistanceBonus());
         existingConfig.setTaxIva(patchDTO.taxIva());
 
         if(patchDTO.phoneList() != null) {
@@ -57,6 +58,7 @@ public class BusinessConfigurationServiceImpl implements BusinessConfigurationSe
                 config.getBasePriceUsd(),
                 config.getFractionPriceUsd(),
                 config.getTaxIva(),
+                config.getMinDistanceBonus(),
                 config.getPhoneList() != null ? config.getPhoneList() : List.of()
         );
     }

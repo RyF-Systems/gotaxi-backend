@@ -27,6 +27,7 @@ public class BusinessConfiguration {
     private Double basePriceUsd;
     private Double fractionPriceUsd;
     private Double taxIva;
+    private Double minDistanceBonus;
 
     @Convert(converter = PhoneListConverter.class)
     @Column(columnDefinition = "TEXT")

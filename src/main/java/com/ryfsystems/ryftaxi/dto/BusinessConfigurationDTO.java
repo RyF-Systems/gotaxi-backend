@@ -23,6 +23,9 @@ public record BusinessConfigurationDTO(
         @DecimalMin(value = "0.0", message = "El IVA debe ser mayor o igual a 0")
         Double taxIva,
 
+        @DecimalMin(value = "0.0", message = "La distancia de Carrera minima debe ser mayor o igual a 0")
+        Double minDistanceBonus,
+
         List<Phone> phoneList
 ) {
 }

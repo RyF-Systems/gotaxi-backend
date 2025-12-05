@@ -1,5 +1,7 @@
 package com.ryfsystems.ryftaxi.service;
 
+import com.ryfsystems.ryftaxi.dto.PriceRequest;
+import com.ryfsystems.ryftaxi.dto.PriceResponse;
 import com.ryfsystems.ryftaxi.dto.TaxiRideRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,4 +41,6 @@ public interface TaxiRideService {
     Map<String, Object> countServiceByStatus();
 
     Optional<TaxiRideRequest> getServiceByRequestId(String requestId);
+
+    PriceResponse getEstimatedPrice(PriceRequest priceRequest);
 }
